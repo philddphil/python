@@ -115,6 +115,7 @@ def Overshoot_phase(Z_mod1, g_OSlw, g_OSup, g_min, g_max):
 (ϕ_A, ϕ_B, ϕ_g) = Fit_phase()
 ϕ_min = 0
 ϕ_max = max(ϕ_g)
+print(ϕ_max)
 ϕ_rng = (ϕ_min, ϕ_max)
 g_ϕ = interp1d(ϕ_g, range(255))
 
@@ -136,6 +137,8 @@ Hol_cy = int(LCOS_δy / 2)
 ϕ_lwlim = ϕ_min
 
 # Overshooting thresholds
+g_OSup = g_ϕ(2)
+g_OSlw = g_ϕ(0.2)
 g_OSup = g_ϕ(ϕ_max/2)
 g_OSlw = g_ϕ(ϕ_max/2)
 g_min = 0
