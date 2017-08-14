@@ -1,3 +1,6 @@
+##############################################################################
+# Import some libraries
+##############################################################################
 
 import random
 import os
@@ -55,7 +58,7 @@ def Phase(x, A, B):
 
 # Use g(ϕ) defined in 'Phase' to fit experimentally obtained phaseramps
 def Fit_phase():
-    p1 = r'C:\Users\Philip\Documents\Python files\curve fitting'
+    p1 = r"C:\Users\Philip\Documents\Python\Local Repo\Curve fitting"
     os.chdir(p1)
     files = glob.glob('*Phaseramp.mat')
     phaseramp = io.loadmat(files[0])
@@ -122,6 +125,7 @@ g_ϕ = interp1d(ϕ_g, range(255))
 ###############################################################################
 # Specify parameters
 ###############################################################################
+
 # LCOS size (# pixels in x & y)
 LCOS_δy = 100
 LCOS_δx = 100
@@ -139,13 +143,13 @@ Hol_cy = int(LCOS_δy / 2)
 # Overshooting thresholds
 g_OSup = g_ϕ(2)
 g_OSlw = g_ϕ(0.2)
-g_OSup = g_ϕ(ϕ_max/2)
-g_OSlw = g_ϕ(ϕ_max/2)
+# g_OSup = g_ϕ(ϕ_max/2)
+# g_OSlw = g_ϕ(ϕ_max/2)
 g_min = 0
 g_max = 255
 
 # Grating metrics (specify Λ (period) and φ (rotation angle))
-Λ = 4.5
+Λ = 7.5
 φ = 0.25 * np.pi
 
 ###############################################################################
