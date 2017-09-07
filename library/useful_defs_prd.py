@@ -2,34 +2,25 @@
 # Import some libraries
 ##############################################################################
 
-import random
 import os
 import glob
 import copy
-import time
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io as io
-import pylab as pl
 import scipy.optimize as opt
-import scipy.misc
 
 from scipy.interpolate import RectBivariateSpline
 from scipy.interpolate import interp1d
-from scipy.signal import find_peaks_cwt
 from scipy.ndimage.filters import gaussian_filter
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.signal import savgol_filter
 from PIL import Image
 
 ###############################################################################
 # Define some functions
 ###############################################################################
 
-# Generate holograms with first two parameters to optimise - Λ and φ
 
-
+# Generate holograms with first two parameters to optimise - Λ and φ ##########
 def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_min, ϕ_max):
 
     x = np.arange(Hol_δx)
@@ -46,7 +37,7 @@ def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_min, ϕ_max):
     return Holo_s
 
 
-# Add sub hologram Z_mod to larger hologram (initially set to 0s)
+# Add sub hologram Z_mod to larger hologram (initially set to 0s) #############
 def add_holo(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
     LCOSy = int(LCOSy)
     LCOSx = int(LCOSx)
@@ -61,13 +52,13 @@ def add_holo(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
     return Holo_f
 
 
-# Defining the functional form of grayscale to phase (g(ϕ))
+# Defining the functional form of grayscale to phase (g(ϕ)) ###################
 def phase(x, A, B):
     ϕ = np.square(np.sin(A * (1 - np.exp(-B * x))))
     return ϕ
 
 
-# Use g(ϕ) defined in 'Phase' to fit experimentally obtained phaseramps
+# Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
 def fit_phase():
     files = glob.glob(r'..\..\Data\Calibration files\*Phaseramp.mat')
     phaseramp = io.loadmat(files[0])
@@ -94,8 +85,7 @@ def fit_phase():
     return (ϕ_A, ϕ_B, ϕ_g)
 
 
-# Use the fitting results from 'Fit_phase' & linear mapping
-# to remap hologram Z_mod
+# Use the fitting results from 'fit_phase'  to remap hologram Z_mod ###########
 def remap_phase(Z_mod, g_ϕ):
     Z_mod1 = copy.copy(Z_mod)
     for i1 in range(np.shape(Z_mod)[0]):
@@ -103,7 +93,7 @@ def remap_phase(Z_mod, g_ϕ):
     return (Z_mod1)
 
 
-# Save bmp file
+# Save a hologram (nupmy array) to a .bmp #####################################
 def save_bmp(Hologram, Path):
     plt.imsave(Path + '.png', Hologram, cmap=plt.cm.gray, vmin=0, vmax=255)
     file_in = Path + '.png'
@@ -112,7 +102,7 @@ def save_bmp(Hologram, Path):
     img.save(file_out)
 
 
-# Overshoot mapping
+# Overshoot mapping ###########################################################
 def overshoot_phase(Z_mod1, g_OSlw, g_OSup, g_min, g_max):
     Z_mod2 = copy.copy(Z_mod1)
     Super_thres_indices = Z_mod1 > g_OSup
@@ -122,7 +112,7 @@ def overshoot_phase(Z_mod1, g_OSlw, g_OSup, g_min, g_max):
     return (Z_mod2)
 
 
-# Upack values from Hologram control sent by LabVIEW
+# Upack values from Hologram control sent by LabVIEW ##########################
 def variable_unpack(LabVIEW_data):
     LCOS_δx = LabVIEW_data[0]
     LCOS_δy = LabVIEW_data[1]
@@ -153,7 +143,7 @@ def variable_unpack(LabVIEW_data):
     return params
 
 
-# Generate hologram and save as bmp
+# Generate hologram and save as bmp ###########################################
 def hologen(*LabVIEW_data):
     # Unpack parameters
     LCOS_δx = LabVIEW_data[0]
@@ -205,13 +195,13 @@ def hologen(*LabVIEW_data):
     save_bmp(Holo_out, r'..\..\Data\bmps\hologram')
 
 
-# Generate 'phase mapping image' for LabVIEW FP
+# Generate 'phase mapping image' for LabVIEW FP ###############################
 def phase_plot(*LabVIEW_data):
     # Unpack parameters
     ϕ_lwlim = LabVIEW_data[8]
     ϕ_uplim = LabVIEW_data[9]
 
-    (ϕ_A, ϕ_B, ϕ_g) = Fit_phase()
+    (ϕ_A, ϕ_B, ϕ_g) = fit_phase()
     g_ϕ = interp1d(ϕ_g, range(255))
     ϕ_min = min(ϕ_g)
     ϕ_max = max(ϕ_g)
@@ -234,14 +224,14 @@ def phase_plot(*LabVIEW_data):
     return (ϕ_min, ϕ_max, g_ϕ)
 
 
-# Generic 1D Gaussian function
+# Generic 1D Gaussian function ################################################
 def Gaussian_1D(x, A, xo, σ_x, bkg):
     xo = float(xo)
     g = bkg + A * np.exp(- ((x - xo) ** 2) / (2 * σ_x ** 2))
     return g
 
 
-# Generic 2D Gaussian function
+# Generic 2D Gaussian function ################################################
 def Gaussian_2D(coords, A, xo, yo, σ_x, σ_y, θ, bkg):
     x, y = coords
     xo = float(xo)
@@ -255,7 +245,7 @@ def Gaussian_2D(coords, A, xo, yo, σ_x, σ_y, θ, bkg):
     return g.ravel()
 
 
-# Fit Λ and ϕ datasets from peak finding routine
+# Fit Λ and ϕ datasets from peak finding routine ##############################
 def find_fit_peak(x, y, A, xo):
     x_1 = np.linspace(min(x), max(x), 100)
     Peak_ind = np.unravel_index(y.argmax(), y.shape)
@@ -283,11 +273,13 @@ def find_fit_peak(x, y, A, xo):
     return (x_peak)
 
 
+# Calculate the running mean of N adjacent elements of the array x ############
 def running_mean(x, N):
     cumsum = np.cumsum(np.insert(x, 0, 0))
     return (cumsum[N:] - cumsum[:-N]) / N
 
 
+# Save 3d plot as a colourscheme suitable for ppt, as a png ###################
 def PPT_save_3d(fig, ax, name):
     plt.rcParams['text.color'] = 'xkcd:charcoal grey'
     fig.patch.set_facecolor('xkcd:white')
@@ -306,6 +298,20 @@ def PPT_save_3d(fig, ax, name):
     fig.savefig(name)
 
 
+# Save 2d plot as a colourscheme suitable for ppt, as a png ###################
+def PPT_save_2d(fig, ax, name):
+    plt.rcParams['text.color'] = 'xkcd:charcoal grey'
+    plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
+    ax.patch.set_facecolor((1.0, 1.0, 1.0, 0.0))
+    ax.xaxis.label.set_color('xkcd:charcoal grey')
+    ax.yaxis.label.set_color('xkcd:charcoal grey')
+    ax.tick_params(axis='x', colors='xkcd:charcoal grey')
+    ax.tick_params(axis='y', colors='xkcd:charcoal grey')
+
+    ax.figure.savefig(name)
+
+
+# Save 2d image as a colourscheme suitable for ppt, as a png ##################
 def PPT_save_2d_im(fig, ax, cb, name):
     plt.rcParams['text.color'] = 'xkcd:charcoal grey'
     plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
@@ -320,6 +326,7 @@ def PPT_save_2d_im(fig, ax, cb, name):
     ax.figure.savefig(name)
 
 
+# Smooth a numpy image array ##################################################
 def img_clean(im):
     im_size = np.shape(im)
     y = np.arange(im_size[0])
@@ -340,6 +347,7 @@ def img_clean(im):
     return smooth_im
 
 
+# Gaussian blur an image n times ##############################################
 def n_G_blurs(im, n):
     im_out = im
     for i1 in range(n):
@@ -348,11 +356,13 @@ def n_G_blurs(im, n):
     return im_out
 
 
+# Find the RMS of array a #####################################################
 def rms(a):
     b = (np.sqrt(np.mean(np.square(a))))
     return b
 
 
+# Find the RMS of array a #####################################################
 def img_csv(file):
     im = np.genfromtxt(file, delimiter=',')
     im_size = np.shape(im)
@@ -363,6 +373,47 @@ def img_csv(file):
     return (im, coords)
 
 
+# Return the element location of the max of array a ###########################
 def max_i_2d(a):
     b = np.unravel_index(a.argmax(), a.shape)
     return(b)
+
+
+# Modokai pallette for plotting ###############################################
+def palette():
+    colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
+               'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
+               'mdk_lgrey': [96 / 255, 96 / 255, 84 / 255],
+               'mdk_green': [95 / 255, 164 / 255, 44 / 255],
+               'mdk_yellow': [229 / 255, 220 / 255, 90 / 255],
+               'mdk_blue': [75 / 255, 179 / 255, 232 / 255],
+               'mdk_orange': [224 / 255, 134 / 255, 31 / 255],
+               'mdk_pink': [180 / 255, 38 / 255, 86 / 255],
+               'rmp_dblue': [12 / 255, 35 / 255, 218 / 255],
+               'rmp_lblue': [46 / 94, 38 / 249, 86 / 255],
+               'rmp_pink': [210 / 255, 76 / 255, 197 / 255],
+               'rmp_green': [90 / 255, 166 / 255, 60 / 255]}
+
+    plt.style.use('ggplot')
+    plt.rcParams['font.size'] = 8
+    plt.rcParams['font.family'] = 'monospace'
+    plt.rcParams['font.fantasy'] = 'Nimbus Mono'
+    plt.rcParams['axes.labelsize'] = 8
+    plt.rcParams['axes.labelweight'] = 'normal'
+    plt.rcParams['xtick.labelsize'] = 8
+    plt.rcParams['ytick.labelsize'] = 8
+    plt.rcParams['legend.fontsize'] = 10
+    plt.rcParams['figure.titlesize'] = 10
+    plt.rcParams['lines.color'] = 'white'
+    plt.rcParams['text.color'] = colours['mdk_purple']
+    plt.rcParams['axes.labelcolor'] = colours['mdk_yellow']
+    plt.rcParams['xtick.color'] = colours['mdk_purple']
+    plt.rcParams['ytick.color'] = colours['mdk_purple']
+    plt.rcParams['axes.edgecolor'] = colours['mdk_lgrey']
+    plt.rcParams['savefig.edgecolor'] = colours['mdk_lgrey']
+    plt.rcParams['axes.facecolor'] = colours['mdk_dgrey']
+    plt.rcParams['savefig.facecolor'] = colours['mdk_dgrey']
+    plt.rcParams['grid.color'] = colours['mdk_lgrey']
+    plt.rcParams['grid.linestyle'] = ':'
+
+    return colours
