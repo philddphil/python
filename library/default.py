@@ -58,4 +58,12 @@ fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_xlabel('x axis')
 ax1.set_ylabel('y axis')
 
+im2 = plt.figure('im2')
+ax2 = im2.add_subplot(1, 1, 1)
+im2.patch.set_facecolor(cs['mdk_dgrey'])
+ax2.set_xlabel('x axis')
+ax2.set_ylabel('y axis')
+cb2 = plt.colorbar()
+
+
 plt.show()

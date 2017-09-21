@@ -60,7 +60,9 @@ def phase(x, A, B):
 
 # Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
 def fit_phase():
-    files = glob.glob(r'..\..\Data\Calibration files\*Phaseramp.mat')
+    f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration files\Phaseramp.mat'
+    # f1 = r'..\..\Data\Calibration files\*Phaseramp.mat'
+    files = glob.glob(f1)
     phaseramp = io.loadmat(files[0])
 
     y_dB = phaseramp['P4'].ravel()
@@ -82,6 +84,7 @@ def fit_phase():
     ϕ_A = popt[0]
     ϕ_B = popt[1]
     ϕ_g = (2 / np.pi) * np.abs(ϕ_A) * (1 - np.exp(-ϕ_B * x3))
+
     return (ϕ_A, ϕ_B, ϕ_g)
 
 
@@ -144,7 +147,7 @@ def variable_unpack(LabVIEW_data):
 
 
 # Generate hologram and save as bmp ###########################################
-def hologen(*LabVIEW_data):
+def holo_gen(*LabVIEW_data):
     # Unpack parameters
     LCOS_δx = LabVIEW_data[0]
     LCOS_δy = LabVIEW_data[1]
@@ -168,12 +171,12 @@ def hologen(*LabVIEW_data):
     # Phase mapping details (ϕ)
     (ϕ_A, ϕ_B, ϕ_g) = fit_phase()
     g_ϕ = interp1d(ϕ_g, range(255))
+
+    # Define holo params
     LCOS_δyx = (LCOS_δy, LCOS_δx)
     Hol_δyx = (Hol_δy, Hol_δx)
     Hol_cyx = (Hol_cy, Hol_cx)
     ϕ_lims = (ϕ_lwlim, ϕ_uplim)
-
-    # Define holo params
     Holo_params = (Λ, φ, *Hol_δyx, *ϕ_lims)
 
     # Calculate sub hologram (Holo_s)
@@ -417,3 +420,15 @@ def palette():
     plt.rcParams['grid.linestyle'] = ':'
 
     return colours
+
+
+# Load multiple .csvs #########################################################
+def load_multicsv(directory):
+    f1 = directory + r'\*.csv'
+    files = glob.glob(f1)
+    data_all = np.array([])
+    for i1, val1 in enumerate(files[0:]):
+        data = np.genfromtxt(val1, delimiter=',')
+        data_all = np.append(data_all, data)
+
+    return data_all
