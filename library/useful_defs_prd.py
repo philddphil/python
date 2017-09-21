@@ -14,6 +14,7 @@ from scipy.interpolate import RectBivariateSpline
 from scipy.interpolate import interp1d
 from scipy.ndimage.filters import gaussian_filter
 from PIL import Image
+from peakdetect import peakdetect
 
 ###############################################################################
 # Define some functions
@@ -60,8 +61,8 @@ def phase(x, A, B):
 
 # Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
 def fit_phase():
-    f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration files\Phaseramp.mat'
-    # f1 = r'..\..\Data\Calibration files\*Phaseramp.mat'
+    # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration files\Phaseramp.mat'
+    f1 = r'..\..\Data\Calibration files\*Phaseramp.mat'
     files = glob.glob(f1)
     phaseramp = io.loadmat(files[0])
 
@@ -182,7 +183,6 @@ def holo_gen(*LabVIEW_data):
     # Calculate sub hologram (Holo_s)
     Holo_s = holo_tilt(*Holo_params)
     Zϕ_mod = Holo_s[1]
-
     # Remap phase with non linear ϕ map
     Zg_mod1 = remap_phase(Zϕ_mod, g_ϕ)
 
@@ -196,9 +196,18 @@ def holo_gen(*LabVIEW_data):
     Holo_out = Holo_f2
     # Save output
     save_bmp(Holo_out, r'..\..\Data\bmps\hologram')
-
+    # Get phase profile plots and save
+    Zs = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims)
+    Z0 = Zs[1]
+    z0 = Z0[:, 0]
+    Z1 = remap_phase(Z0, g_ϕ)
+    z1 = Z1[:,0] 
+    np.savetxt('phaseprofile.csv', z0, delimiter=',')
+    np.savetxt('greyprofile.csv', z1, delimiter=',')
 
 # Generate 'phase mapping image' for LabVIEW FP ###############################
+
+
 def phase_plot(*LabVIEW_data):
     # Unpack parameters
     ϕ_lwlim = LabVIEW_data[8]
@@ -254,17 +263,15 @@ def find_fit_peak(x, y, A, xo):
     Peak_ind = np.unravel_index(y.argmax(), y.shape)
     initial_guess = (A, x[Peak_ind[0]], xo, 0)
 
-    # Plot data
-    # plt.figure(1)
-    # plt.plot(x, y, c='xkcd:light red', marker='.')
-    # plt.plot(x, Gaussian_1D(x, *initial_guess), c='xkcd:light blue', marker='.')
-    # plt.show()
     # Fit data
     try:
         popt, pcov = opt.curve_fit(
             Gaussian_1D, x, y, p0=initial_guess)
         fit0 = Gaussian_1D(x_1, *popt)
-
+        p1 = r'C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files\sweepfit.csv'
+        p2 = r'C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files\sweepdata.csv'
+        np.savetxt(p1, np.column_stack((x_1, fit0)), delimiter=',')
+        np.savetxt(p2, np.column_stack((x, y)), delimiter=',')
         Peak_ind_f = np.unravel_index(fit0.argmax(), fit0.shape)
         x_peak = x_1[Peak_ind_f[0]]
         # plt.plot(x_peak, np.max(fit0), 'x', c='xkcd:blue')
