@@ -201,7 +201,8 @@ def holo_gen(*LabVIEW_data):
     Z0 = Zs[1]
     z0 = Z0[:, 0]
     Z1 = remap_phase(Z0, g_ϕ)
-    z1 = Z1[:,0] 
+    Z2 = overshoot_phase(Zg_mod1, g_OSlw, g_OSup, g_min, g_max)
+    z1 = Z2[:,0] 
     np.savetxt('phaseprofile.csv', z0, delimiter=',')
     np.savetxt('greyprofile.csv', z1, delimiter=',')
 
