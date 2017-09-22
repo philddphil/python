@@ -14,7 +14,6 @@ from scipy.interpolate import RectBivariateSpline
 from scipy.interpolate import interp1d
 from scipy.ndimage.filters import gaussian_filter
 from PIL import Image
-from peakdetect import peakdetect
 
 ###############################################################################
 # Define some functions
@@ -22,7 +21,7 @@ from peakdetect import peakdetect
 
 
 # Generate holograms with first two parameters to optimise - Λ and φ ##########
-def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_min, ϕ_max):
+def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_min, ϕ_max, offset):
 
     x = np.arange(Hol_δx)
     y = np.arange(Hol_δy)
@@ -30,7 +29,7 @@ def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_min, ϕ_max):
 
     θ = np.arctan((ϕ_max - ϕ_min) / Λ)
 
-    Z = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ))
+    Z = offset + np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) 
     Z_mod = Z % (ϕ_max - ϕ_min - 0.00000001)
     Z_mod = Z_mod * (ϕ_max - ϕ_min) / (np.max(Z_mod)) + ϕ_min
 
@@ -138,12 +137,13 @@ def variable_unpack(LabVIEW_data):
 
     Λ = LabVIEW_data[14]
     φ = LabVIEW_data[15]
+    offset = LabVIEW_data[16]
 
     params = [LCOS_δx, LCOS_δy,
               Hol_δx, Hol_δy, Hol_cx, Hol_cy,
               ϕ_min, ϕ_max, ϕ_lwlim, ϕ_uplim,
               g_OSlw, g_OSup, g_min, g_max,
-              Λ, φ]
+              Λ, φ, offset]
     return params
 
 
@@ -168,6 +168,7 @@ def holo_gen(*LabVIEW_data):
 
     Λ = LabVIEW_data[14]
     φ = LabVIEW_data[15]
+    offset = LabVIEW_data[16]
 
     # Phase mapping details (ϕ)
     (ϕ_A, ϕ_B, ϕ_g) = fit_phase()
@@ -178,7 +179,7 @@ def holo_gen(*LabVIEW_data):
     Hol_δyx = (Hol_δy, Hol_δx)
     Hol_cyx = (Hol_cy, Hol_cx)
     ϕ_lims = (ϕ_lwlim, ϕ_uplim)
-    Holo_params = (Λ, φ, *Hol_δyx, *ϕ_lims)
+    Holo_params = (Λ, φ, *Hol_δyx, *ϕ_lims, offset)
 
     # Calculate sub hologram (Holo_s)
     Holo_s = holo_tilt(*Holo_params)
@@ -197,18 +198,18 @@ def holo_gen(*LabVIEW_data):
     # Save output
     save_bmp(Holo_out, r'..\..\Data\bmps\hologram')
     # Get phase profile plots and save
-    Zs = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims)
+    Zs = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset)
     Z0 = Zs[1]
     z0 = Z0[:, 0]
     Z1 = remap_phase(Z0, g_ϕ)
     Z2 = overshoot_phase(Zg_mod1, g_OSlw, g_OSup, g_min, g_max)
-    z1 = Z2[:,0] 
+    z1 = Z2[:, 0]
     np.savetxt('phaseprofile.csv', z0, delimiter=',')
     np.savetxt('greyprofile.csv', z1, delimiter=',')
+    return [Zg_mod1, Zg_mod2]
+
 
 # Generate 'phase mapping image' for LabVIEW FP ###############################
-
-
 def phase_plot(*LabVIEW_data):
     # Unpack parameters
     ϕ_lwlim = LabVIEW_data[8]
