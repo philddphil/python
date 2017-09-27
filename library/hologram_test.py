@@ -39,25 +39,20 @@ f1 = r"C:\Users\Philip\Desktop\fibre1.csv"
 data = np.genfromtxt(f1, delimiter=',')
 os.chdir(r"C:\Users\Philip\Documents\LabVIEW\labview-python\python-code")
 params = prd.variable_unpack(data)
-params[2] = 50
-params[3] = 50
-params[9] = 2.2
-params[14] = 10
-params[15] = np.pi / 2
-params[16] = 1
-params[17] = 1
+params[2] = 100
+params[3] = 100
+params[8] = 0.2
+params[9] = 2.0
+params[10] = 15
+params[11] = 180
+params[12] = 0
+params[13] = 255
+params[14] = 25
+params[15] = 0.6 * np.pi / 2
+params[16] = 10
+params[17] = 0.1
 params[18] = 0
-
-print(params)
-[Z1, Z2] = prd.holo_gen(*params)
-x, y = np.shape(Z1)
-X, Y = np.meshgrid(range(x), range(y))
-ρ, Φ = prd.cart2pol(X,Y)
-a = 20
-b = 0.5 * (2 * np.pi) / 11
-c = 0
-φ = np.pi / 2
-Z0 = a * (np.sin(b * (X * np.cos(φ) + Y * np.sin(φ)) + c)**2)
+[H1, H2, H3, H4, H5, H6] = prd.holo_gen(*params)
 
 
 ##############################################################################
@@ -70,11 +65,24 @@ ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_xlabel('x axis')
 ax1.set_ylabel('y axis')
-p1 = plt.plot(Z1[:, 0], '.--', lw=0.5)
-p2 = plt.plot(Z0[:, 0], '.--', lw=0.5)
+
+p1 = plt.plot(H1[:, 0], '.--', lw=0.5)
+p2 = plt.plot(H2[:, 0], '.--', lw=0.5)
 
 ggred = p1[0].get_color()
 ggblue = p2[0].get_color()
+
+fig2 = plt.figure('fig2')
+ax2 = fig2.add_subplot(1, 1, 1)
+fig2.patch.set_facecolor(cs['mdk_dgrey'])
+ax2.set_xlabel('x axis')
+ax2.set_ylabel('y axis')
+
+p1 = plt.plot(H3[:, 0], '.--', lw=0.5)
+p2 = plt.plot(H4[:, 0], '.--', lw=0.5)
+
+# ggred = p1[0].get_color()
+# ggblue = p2[0].get_color()
 
 # fig0 = plt.figure('fig0')
 # ax0 = Axes3D(fig0)
@@ -97,16 +105,16 @@ ax2 = im2.add_subplot(1, 1, 1)
 im2.patch.set_facecolor(cs['mdk_dgrey'])
 ax2.set_xlabel('x axis')
 ax2.set_ylabel('y axis')
-plt.imshow(Z0, cmap='gray', vmin=0, vmax=255)
+plt.imshow(H5, cmap='gray')
 cb2 = plt.colorbar()
 
-# im3 = plt.figure('im3')
-# ax3 = im3.add_subplot(1, 1, 1)
-# im3.patch.set_facecolor(cs['mdk_dgrey'])
-# ax3.set_xlabel('x axis')
-# ax3.set_ylabel('y axis')
-# plt.imshow(Z2, cmap='gray', vmin=0, vmax=255)
-# cb3 = plt.colorbar()
+im3 = plt.figure('im3')
+ax3 = im3.add_subplot(1, 1, 1)
+im3.patch.set_facecolor(cs['mdk_dgrey'])
+ax3.set_xlabel('x axis')
+ax3.set_ylabel('y axis')
+plt.imshow(H6, cmap='gray')
+cb3 = plt.colorbar()
 
 
 # fig2 = plt.figure('fig2')

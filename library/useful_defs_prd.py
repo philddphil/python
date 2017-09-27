@@ -21,19 +21,36 @@ from PIL import Image
 
 
 # Generate holograms with first two parameters to optimise - Λ and φ ##########
-def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_min, ϕ_max, offset):
-
+def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
+    # Generate meshgrid of coordinate points
     x = np.arange(Hol_δx)
     y = np.arange(Hol_δy)
     [X, Y] = np.meshgrid(x, y)
 
-    θ = np.arctan((ϕ_max - ϕ_min) / Λ)
+    # Calculate phase tilt angle from periodicity and usable phase range
+    θ = np.arctan((ϕ_uplim - ϕ_lwlim) / Λ)
 
-    Z = offset + np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) 
-    Z_mod = Z % (ϕ_max - ϕ_min - 0.00000001)
-    Z_mod = Z_mod * (ϕ_max - ϕ_min) / (np.max(Z_mod)) + ϕ_min
+    # Convert offset from pixels into phase
+    of1 = off * (ϕ_uplim - ϕ_lwlim) / Λ
+    # Calculate tilted (unmodulated) phase profile
+    Z1 = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) - of1
 
-    Holo_s = (Z, Z_mod)
+    # Calulate higher frequency sinsusoidal profile
+    Z2 = sin_amp * np.sin(4 * np.pi / Λ *
+                          (X * np.cos(φ) + Y * np.sin(φ)) -
+                          sin_off * 4 * np.pi / Λ -
+                          off * 4 * np.pi / Λ)
+
+    # Calculate blazed grating (no sinusoid)
+    Z1_mod = Z1 % (ϕ_uplim - ϕ_lwlim - 0.00000001)
+    Z1_mod = Z1_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z1_mod)) + ϕ_lwlim
+
+    # Calculate blazed grating + sinusoid
+    Z2_mod = (Z1 + Z2) % (ϕ_uplim - ϕ_lwlim - 0.00000001)
+    Z2_mod = Z2_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z2_mod)) + ϕ_lwlim
+
+    # Output all 4
+    Holo_s = (Z1, Z1_mod, Z2, Z2_mod)
     return Holo_s
 
 
@@ -60,7 +77,8 @@ def phase(x, A, B):
 
 # Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
 def fit_phase():
-    # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration files\Phaseramp.mat'
+    # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration
+    # files\Phaseramp.mat'
     f1 = r'..\..\Data\Calibration files\*Phaseramp.mat'
     files = glob.glob(f1)
     phaseramp = io.loadmat(files[0])
@@ -98,7 +116,8 @@ def remap_phase(Z_mod, g_ϕ):
 
 # Save a hologram (nupmy array) to a .bmp #####################################
 def save_bmp(Hologram, Path):
-    plt.imsave(Path + '.png', Hologram, cmap=plt.cm.gray, vmin=0, vmax=255)
+    plt.imsave(Path + '.png', Hologram,
+               cmap=plt.cm.gray, vmin=0, vmax=255)
     file_in = Path + '.png'
     img = Image.open(file_in)
     file_out = Path + '.bmp'
@@ -139,11 +158,14 @@ def variable_unpack(LabVIEW_data):
     φ = LabVIEW_data[15]
     offset = LabVIEW_data[16]
 
+    sin_amp = LabVIEW_data[17]
+    sin_off = LabVIEW_data[18]
+
     params = [LCOS_δx, LCOS_δy,
               Hol_δx, Hol_δy, Hol_cx, Hol_cy,
               ϕ_min, ϕ_max, ϕ_lwlim, ϕ_uplim,
               g_OSlw, g_OSup, g_min, g_max,
-              Λ, φ, offset]
+              Λ, φ, offset, sin_amp, sin_off]
     return params
 
 
@@ -170,6 +192,9 @@ def holo_gen(*LabVIEW_data):
     φ = LabVIEW_data[15]
     offset = LabVIEW_data[16]
 
+    sin_amp = LabVIEW_data[17]
+    sin_off = LabVIEW_data[18]
+
     # Phase mapping details (ϕ)
     (ϕ_A, ϕ_B, ϕ_g) = fit_phase()
     g_ϕ = interp1d(ϕ_g, range(255))
@@ -182,31 +207,55 @@ def holo_gen(*LabVIEW_data):
     Holo_params = (Λ, φ, *Hol_δyx, *ϕ_lims, offset)
 
     # Calculate sub hologram (Holo_s)
-    Holo_s = holo_tilt(*Holo_params)
-    Zϕ_mod = Holo_s[1]
+    Zs = holo_tilt(*Holo_params, sin_amp, sin_off)
+    Z0 = Zs[0]
+    Z1 = Zs[1]
+    Z2 = Zs[2]
+    Z3 = Zs[3]
+
     # Remap phase with non linear ϕ map
-    Zg_mod1 = remap_phase(Zϕ_mod, g_ϕ)
+    H1 = remap_phase(Z1, g_ϕ)
+    H3 = remap_phase(Z3, g_ϕ)
 
     # Use overshooting
-    Zg_mod2 = overshoot_phase(Zg_mod1, g_OSlw, g_OSup, g_min, g_max)
+    H1_1 = overshoot_phase(H1, g_OSlw, g_OSup, g_min, g_max)
+    H3_1 = overshoot_phase(H3, g_OSlw, g_OSup, g_min, g_max)
 
     # Calculate full holograms (Holo_f)
-    Holo_f2 = add_holo(*Hol_cyx, Zg_mod2, *LCOS_δyx)
+    H1_f = add_holo(*Hol_cyx, H1_1, *LCOS_δyx)
+    H3_f = add_holo(*Hol_cyx, H1_1, *LCOS_δyx)
 
     # Set output holograms (Z_out, Holo_out)
-    Holo_out = Holo_f2
+    Holo_out = H3_f
+
     # Save output
     save_bmp(Holo_out, r'..\..\Data\bmps\hologram')
-    # Get phase profile plots and save
-    Zs = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset)
-    Z0 = Zs[1]
-    z0 = Z0[:, 0]
-    Z1 = remap_phase(Z0, g_ϕ)
-    Z2 = overshoot_phase(Zg_mod1, g_OSlw, g_OSup, g_min, g_max)
-    z1 = Z2[:, 0]
-    np.savetxt('phaseprofile.csv', z0, delimiter=',')
-    np.savetxt('greyprofile.csv', z1, delimiter=',')
-    return [Zg_mod1, Zg_mod2]
+
+    # Get phase profile plots and save (use tilt angle of 0 for plotting)
+    Zs_p = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
+    Z0_p = Zs_p[0]
+    Z1_p = Zs_p[1]
+    Z2_p = Zs_p[2]
+    Z3_p = Zs_p[3]
+
+    z0_p = Z0_p[:, 0]
+    z1_p = Z1_p[:, 0]
+    z2_p = Z2_p[:, 0]
+    z3_p = Z3_p[:, 0]
+
+    H1_p = remap_phase(Z1_p, g_ϕ)
+    H1_1_p = overshoot_phase(H1_p, g_OSlw, g_OSup, g_min, g_max)
+    H3_p = remap_phase(Z3_p, g_ϕ)
+    H3_1_p = overshoot_phase(H3_p, g_OSlw, g_OSup, g_min, g_max)
+
+    h1_p = H1_1_p[:, 0]
+    h3_p = H3_1_p[:, 0]
+
+    np.savetxt('phaseprofile0.csv', z1_p, delimiter=',')
+    np.savetxt('greyprofile0.csv', h1_p, delimiter=',')
+    np.savetxt('phaseprofile3.csv', z3_p, delimiter=',')
+    np.savetxt('greyprofile3.csv', h3_p, delimiter=',')
+    return [Z1_p, Z2_p, H1_1_p, H3_1_p, H1_1, H3_1]
 
 
 # Generate 'phase mapping image' for LabVIEW FP ###############################
@@ -441,3 +490,17 @@ def load_multicsv(directory):
         data_all = np.append(data_all, data)
 
     return data_all
+
+
+# Cartesian to polar coords ###################################################
+def cart2pol(x, y):
+    ρ = np.sqrt(x**2 + y**2)
+    ϕ = np.arctan2(y, x)
+    return(ρ, ϕ)
+
+
+# Polar to cartesian coords####################################################
+def pol2cart(ρ, ϕ):
+    x = ρ * np.cos(ϕ)
+    y = ρ * np.sin(ϕ)
+    return(x, y)
