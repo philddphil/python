@@ -172,6 +172,9 @@ def variable_unpack(LabVIEW_data):
 # Generate hologram and save as bmp ###########################################
 def holo_gen(*LabVIEW_data):
     # Unpack parameters
+    os.chdir(r"C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files")
+    cs = palette()
+
     LCOS_δx = LabVIEW_data[0]
     LCOS_δy = LabVIEW_data[1]
 
@@ -189,7 +192,7 @@ def holo_gen(*LabVIEW_data):
     g_max = LabVIEW_data[13]
 
     Λ = LabVIEW_data[14]
-    φ = LabVIEW_data[15]
+    φ = (np.pi/180)*LabVIEW_data[15]
     offset = LabVIEW_data[16]
 
     sin_amp = LabVIEW_data[17]
@@ -208,6 +211,7 @@ def holo_gen(*LabVIEW_data):
 
     # Calculate sub hologram (Holo_s)
     Zs = holo_tilt(*Holo_params, sin_amp, sin_off)
+    print(*Holo_params, sin_amp, sin_off)
     Z0 = Zs[0]
     Z1 = Zs[1]
     Z2 = Zs[2]
@@ -222,9 +226,18 @@ def holo_gen(*LabVIEW_data):
     H3_1 = overshoot_phase(H3, g_OSlw, g_OSup, g_min, g_max)
 
     # Calculate full holograms (Holo_f)
-    H1_f = add_holo(*Hol_cyx, H1_1, *LCOS_δyx)
-    H3_f = add_holo(*Hol_cyx, H1_1, *LCOS_δyx)
+    # H1_f = add_holo(*Hol_cyx, H1_1, *LCOS_δyx)
+    H3_f = add_holo(*Hol_cyx, H3_1, *LCOS_δyx)
 
+    im2 = plt.figure('im2')
+    ax2 = im2.add_subplot(1, 1, 1)
+    im2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('x axis')
+    ax2.set_ylabel('y axis')
+    plt.imshow(H3, cmap='gray', vmin=0, vmax=255)
+    cb2 = plt.colorbar()
+    PPT_save_2d_im(im2, ax2, cb2, 'sub hologram1.png')
+    plt.clf()
     # Set output holograms (Z_out, Holo_out)
     Holo_out = H3_f
 
@@ -233,6 +246,7 @@ def holo_gen(*LabVIEW_data):
 
     # Get phase profile plots and save (use tilt angle of 0 for plotting)
     Zs_p = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
+    print(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
     Z0_p = Zs_p[0]
     Z1_p = Zs_p[1]
     Z2_p = Zs_p[2]
@@ -248,13 +262,33 @@ def holo_gen(*LabVIEW_data):
     H3_p = remap_phase(Z3_p, g_ϕ)
     H3_1_p = overshoot_phase(H3_p, g_OSlw, g_OSup, g_min, g_max)
 
-    h1_p = H1_1_p[:, 0]
-    h3_p = H3_1_p[:, 0]
+    h1_p = H1_p[:, int(Λ / 2)]
+    h3_1_p = H3_1_p[:, int(Λ / 2)]
+
+    fig2 = plt.figure('fig2')
+    ax2 = fig2.add_subplot(1, 1, 1)
+    fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('pixel')
+    ax2.set_ylabel('grey value [0:255] axis')
+    plt.plot(h3_1_p, '.--', lw=0.5)
+    plt.plot(h1_p, '.--', lw=0.5)
+    PPT_save_2d(fig2, ax2, 'pixel row.png')
+    plt.cla()
+
+    im2 = plt.figure('im2')
+    ax2 = im2.add_subplot(1, 1, 1)
+    im2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('x axis')
+    ax2.set_ylabel('y axis')
+    plt.imshow(H3_1_p, cmap='gray')
+    cb2 = plt.colorbar()
+    PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
+    plt.clf()
 
     np.savetxt('phaseprofile0.csv', z1_p, delimiter=',')
     np.savetxt('greyprofile0.csv', h1_p, delimiter=',')
     np.savetxt('phaseprofile3.csv', z3_p, delimiter=',')
-    np.savetxt('greyprofile3.csv', h3_p, delimiter=',')
+    np.savetxt('greyprofile3.csv', h3_1_p, delimiter=',')
     return [Z1_p, Z2_p, H1_1_p, H3_1_p, H1_1, H3_1]
 
 
