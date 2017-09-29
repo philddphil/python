@@ -38,7 +38,6 @@ while True:
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
         variables = re.findall(r'\s(\D*)', hol_data)
-        print(LabVIEW_data)
         ϕs = prd.phase_plot(*LabVIEW_data)
         ϕ_min = (str(round(ϕs[0], 6))).zfill(10)
         ϕ_max = (str(round(ϕs[1], 6))).zfill(10)
@@ -70,8 +69,8 @@ while True:
         ϕs = np.array(ϕs)
         Ps = np.power(10, Ps / 10)
 
-        ϕ = prd.find_fit_peak(ϕs, Ps, max(Ps), 0.1)
-        ϕ = (str(round(ϕ, 6))).zfill(10)
+        ϕ = prd.find_fit_peak((np.pi / 180) * ϕs, Ps, max(Ps), 0.1)
+        ϕ = (str(round(ϕ * 180 / np.pi, 6))).zfill(10)
         data_out = ϕ
         print('ϕ = ', ϕ)
         conn.sendall(bytes(data_out, 'utf-8'))
