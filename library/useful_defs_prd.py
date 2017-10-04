@@ -99,6 +99,18 @@ def fit_phase():
     except RuntimeError:
         print("Error - curve_fit failed")
 
+    os.chdir(r"C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files")
+    cs = palette()
+    fig2 = plt.figure('fig2')
+    ax2 = fig2.add_subplot(1, 1, 1)
+    fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('pixel')
+    ax2.set_ylabel('grey value [0:255] axis')
+    plt.plot(x3, phase(x3, *popt), '--', lw=0.5)
+    plt.plot(x0, y_lin, '.', lw=0.5)
+    PPT_save_2d(fig2, ax2, 'python phase phit.png')
+    plt.cla()
+
     ϕ_A = popt[0]
     ϕ_B = popt[1]
     ϕ_g = (2 / np.pi) * np.abs(ϕ_A) * (1 - np.exp(-ϕ_B * x3))
@@ -192,7 +204,7 @@ def holo_gen(*LabVIEW_data):
     g_max = LabVIEW_data[13]
 
     Λ = LabVIEW_data[14]
-    φ = (np.pi/180)*LabVIEW_data[15]
+    φ = (np.pi / 180) * LabVIEW_data[15]
     offset = LabVIEW_data[16]
 
     sin_amp = LabVIEW_data[17]
@@ -272,7 +284,18 @@ def holo_gen(*LabVIEW_data):
     ax2.set_ylabel('grey value [0:255] axis')
     plt.plot(h3_1_p, '.--', lw=0.5)
     plt.plot(h1_p, '.--', lw=0.5)
-    PPT_save_2d(fig2, ax2, 'pixel row.png')
+    PPT_save_2d(fig2, ax2, 'pixel row grey.png')
+    plt.cla()
+
+    fig2 = plt.figure('fig2')
+    ax2 = fig2.add_subplot(1, 1, 1)
+    fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('pixel')
+    ax2.set_ylabel('grey value [0:255] axis')
+    plt.plot(z1_p, '.--', lw=0.5)
+    plt.plot(z3_p, '.--', lw=0.5)
+    plt.plot(z2_p, '.--', lw=0.5)
+    PPT_save_2d(fig2, ax2, 'pixel row phase.png')
     plt.cla()
 
     im2 = plt.figure('im2')
@@ -485,9 +508,26 @@ def palette():
                'mdk_orange': [224 / 255, 134 / 255, 31 / 255],
                'mdk_pink': [180 / 255, 38 / 255, 86 / 255],
                'rmp_dblue': [12 / 255, 35 / 255, 218 / 255],
-               'rmp_lblue': [46 / 94, 38 / 249, 86 / 255],
+               'rmp_lblue': [46 / 255, 38 / 255, 86 / 255],
                'rmp_pink': [210 / 255, 76 / 255, 197 / 255],
-               'rmp_green': [90 / 255, 166 / 255, 60 / 255]}
+               'rmp_green': [90 / 255, 166 / 255, 60 / 255],
+               'fibre9l_1': [234 / 255, 170 / 255, 255 / 255],
+               'fibre9l_2': [255 / 255, 108 / 255, 134 / 255],
+               'fibre9l_3': [255 / 255, 182 / 255, 100 / 255],
+               'fibre9l_4': [180 / 255, 151 / 255, 255 / 255],
+               'fibre9l_6': [248 / 255, 255 / 255, 136 / 255],
+               'fibre9l_7': [136 / 255, 172 / 255, 255 / 255],
+               'fibre9l_8': [133 / 255, 255 / 255, 226 / 255],
+               'fibre9l_9': [135 / 255, 255 / 255, 132 / 255],
+               'fibre9d_1': [95 / 255, 0 / 255, 125 / 255],
+               'fibre9d_2': [157 / 255, 0 / 255, 28 / 255],
+               'fibre9d_3': [155 / 255, 82 / 255, 0 / 255],
+               'fibre9d_4': [40 / 255, 0 / 255, 147 / 255],
+               'fibre9d_6': [119 / 255, 125 / 255, 0 / 255],
+               'fibre9d_7': [0 / 255, 39 / 255, 139 / 255],
+               'fibre9d_8': [0 / 255, 106 / 255, 85 / 255],
+               'fibre9d_9': [53 / 255, 119 / 255, 0 / 255]
+               }
 
     plt.style.use('ggplot')
     plt.rcParams['font.size'] = 8
