@@ -48,9 +48,9 @@ params[11] = 180
 params[12] = 0
 params[13] = 255
 params[14] = 25
-params[15] = 0.6 * np.pi / 2
+params[15] = 0.23 * np.pi / 2
 params[16] = 10
-params[17] = 0.1
+params[17] = 0.0
 params[18] = 0
 [H1, H2, H3, H4, H5, H6] = prd.holo_gen(*params)
 
