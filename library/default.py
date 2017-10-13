@@ -75,12 +75,16 @@ ax1.set_ylabel('y axis')
 plt.plot(x, x, '.--')
 plt.plot(x, y, '.--')
 
-# im2 = plt.figure('im2')
-# ax2 = im2.add_subplot(1, 1, 1)
-# im2.patch.set_facecolor(cs['mdk_dgrey'])
-# ax2.set_xlabel('x axis')
-# ax2.set_ylabel('y axis')
-# cb2 = plt.colorbar()
+im3 = plt.figure('im3')
+ax3 = im3.add_subplot(1, 1, 1)
+im3.patch.set_facecolor(cs['mdk_dgrey'])
+ax3.set_xlabel('x axis')
+ax3.set_ylabel('y axis')
+plt.imshow(Z, label='X talk', extent=prd.extents(x) + prd.extents(y))
+cb2 = plt.colorbar()
+plt.legend()
+
 
 
 plt.show()
+

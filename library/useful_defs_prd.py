@@ -399,7 +399,7 @@ def running_mean(x, N):
 
 # Save 3d plot as a colourscheme suitable for ppt, as a png ###################
 def PPT_save_3d(fig, ax, name):
-    plt.rcParams['text.color'] = 'xkcd:charcoal grey'
+    plt.rcParams['text.color'] = 'xkcd:black'
     fig.patch.set_facecolor('xkcd:white')
     ax.patch.set_facecolor('xkcd:white')
     ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
@@ -407,39 +407,40 @@ def PPT_save_3d(fig, ax, name):
     ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     fig.patch.set_alpha(0.0)
     ax.patch.set_alpha(0.0)
-    ax.xaxis.label.set_color('xkcd:charcoal grey')
-    ax.yaxis.label.set_color('xkcd:charcoal grey')
-    ax.zaxis.label.set_color('xkcd:charcoal grey')
-    ax.tick_params(axis='x', colors='xkcd:charcoal grey')
-    ax.tick_params(axis='y', colors='xkcd:charcoal grey')
-    ax.tick_params(axis='z', colors='xkcd:charcoal grey')
+    ax.xaxis.label.set_color('xkcd:black')
+    ax.yaxis.label.set_color('xkcd:black')
+    ax.zaxis.label.set_color('xkcd:black')
+    ax.tick_params(axis='x', colors='xkcd:black')
+    ax.tick_params(axis='y', colors='xkcd:black')
+    ax.tick_params(axis='z', colors='xkcd:black')
     fig.savefig(name)
 
 
 # Save 2d plot as a colourscheme suitable for ppt, as a png ###################
 def PPT_save_2d(fig, ax, name):
-    plt.rcParams['text.color'] = 'xkcd:charcoal grey'
+    plt.rcParams['text.color'] = 'xkcd:black'
     plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
     ax.patch.set_facecolor((1.0, 1.0, 1.0, 0.0))
-    ax.xaxis.label.set_color('xkcd:charcoal grey')
-    ax.yaxis.label.set_color('xkcd:charcoal grey')
-    ax.tick_params(axis='x', colors='xkcd:charcoal grey')
-    ax.tick_params(axis='y', colors='xkcd:charcoal grey')
+    ax.xaxis.label.set_color('xkcd:black')
+    ax.yaxis.label.set_color('xkcd:black')
+    ax.tick_params(axis='x', colors='xkcd:black')
+    ax.tick_params(axis='y', colors='xkcd:black')
 
     ax.figure.savefig(name)
 
 
 # Save 2d image as a colourscheme suitable for ppt, as a png ##################
 def PPT_save_2d_im(fig, ax, cb, name):
-    plt.rcParams['text.color'] = 'xkcd:charcoal grey'
+    cs = palette()
+    plt.rcParams['text.color'] = 'xkcd:black'
     plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
     ax.patch.set_facecolor((1.0, 1.0, 1.0, 0.0))
-    ax.xaxis.label.set_color('xkcd:charcoal grey')
-    ax.yaxis.label.set_color('xkcd:charcoal grey')
-    ax.tick_params(axis='x', colors='xkcd:charcoal grey')
-    ax.tick_params(axis='y', colors='xkcd:charcoal grey')
+    ax.xaxis.label.set_color('xkcd:black')
+    ax.yaxis.label.set_color('xkcd:black')
+    ax.tick_params(axis='x', colors='xkcd:black')
+    ax.tick_params(axis='y', colors='xkcd:black')
     cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
-    plt.setp(cbytick_obj, color='xkcd:charcoal grey')
+    plt.setp(cbytick_obj, color='xkcd:black')
 
     ax.figure.savefig(name)
 
@@ -526,7 +527,8 @@ def palette():
                'fibre9d_6': [119 / 255, 125 / 255, 0 / 255],
                'fibre9d_7': [0 / 255, 39 / 255, 139 / 255],
                'fibre9d_8': [0 / 255, 106 / 255, 85 / 255],
-               'fibre9d_9': [53 / 255, 119 / 255, 0 / 255]
+               'fibre9d_9': [53 / 255, 119 / 255, 0 / 255],
+               'ggplot_r': [226 / 255, 74 / 255, 51 / 255]
                }
 
     plt.style.use('ggplot')
@@ -578,3 +580,9 @@ def pol2cart(ρ, ϕ):
     x = ρ * np.cos(ϕ)
     y = ρ * np.sin(ϕ)
     return(x, y)
+
+
+# Define extents for use in plotting arrays of data with x/y axis
+def extents(f):
+    delta = f[1] - f[0]
+    return [f[0] - delta / 2, f[-1] + delta / 2]
