@@ -39,17 +39,17 @@ f1 = r"C:\Users\Philip\Desktop\fibre1.csv"
 data = np.genfromtxt(f1, delimiter=',')
 os.chdir(r"C:\Users\Philip\Documents\LabVIEW\labview-python\python-code")
 params = prd.variable_unpack(data)
-params[2] = 100
-params[3] = 100
-params[8] = 0.2
-params[9] = 2.0
-params[10] = 15
-params[11] = 180
+params[2] = 5
+params[3] = 5
+params[8] = 0.5
+params[9] = 2.5
+params[10] = 0
+params[11] = 255
 params[12] = 0
 params[13] = 255
-params[14] = 25
-params[15] = 0.23 * np.pi / 2
-params[16] = 10
+params[14] = 5
+params[15] = 90
+params[16] = 0
 params[17] = 0.0
 params[18] = 0
 [H1, H2, H3, H4, H5, H6] = prd.holo_gen(*params)
@@ -58,28 +58,29 @@ params[18] = 0
 ##############################################################################
 # Plot some figures
 ##############################################################################
-a = 5
 
+os.chdir(r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
 fig1 = plt.figure('fig1')
 ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_xlabel('x axis')
 ax1.set_ylabel('y axis')
 
-p1 = plt.plot(H1[:, 0], '.--', lw=0.5)
-p2 = plt.plot(H2[:, 0], '.--', lw=0.5)
+p1 = plt.plot(H6[:, 0], '.--', lw=0.5)
+# p2 = plt.plot(H2[:, 0], '.--', lw=0.5)
 
 ggred = p1[0].get_color()
-ggblue = p2[0].get_color()
+# ggblue = p2[0].get_color()
 
-fig2 = plt.figure('fig2')
-ax2 = fig2.add_subplot(1, 1, 1)
-fig2.patch.set_facecolor(cs['mdk_dgrey'])
-ax2.set_xlabel('x axis')
-ax2.set_ylabel('y axis')
+# fig2 = plt.figure('fig2')
+# ax2 = fig2.add_subplot(1, 1, 1)
+# fig2.patch.set_facecolor(cs['mdk_dgrey'])
+# ax2.set_xlabel('x axis')
+# ax2.set_ylabel('y axis')
 
-p1 = plt.plot(H3[:, 0], '.--', lw=0.5)
-p2 = plt.plot(H4[:, 0], '.--', lw=0.5)
+# p1 = plt.plot(H3[0:2 * 20, 0], '.--', lw=0.5)
+
+# p2 = plt.plot(H4[:, 0], '.--', lw=0.5)
 
 # ggred = p1[0].get_color()
 # ggblue = p2[0].get_color()
@@ -106,15 +107,15 @@ im2.patch.set_facecolor(cs['mdk_dgrey'])
 ax2.set_xlabel('x axis')
 ax2.set_ylabel('y axis')
 plt.imshow(H5, cmap='gray')
-cb2 = plt.colorbar()
 
-im3 = plt.figure('im3')
-ax3 = im3.add_subplot(1, 1, 1)
-im3.patch.set_facecolor(cs['mdk_dgrey'])
-ax3.set_xlabel('x axis')
-ax3.set_ylabel('y axis')
-plt.imshow(H6, cmap='gray')
-cb3 = plt.colorbar()
+
+# im3 = plt.figure('im3')
+# ax3 = im3.add_subplot(1, 1, 1)
+# im3.patch.set_facecolor(cs['mdk_dgrey'])
+# ax3.set_xlabel('x axis')
+# ax3.set_ylabel('y axis')
+# plt.imshow(H6, cmap='gray')
+# cb3 = plt.colorbar()
 
 
 # fig2 = plt.figure('fig2')
@@ -131,3 +132,4 @@ cb3 = plt.colorbar()
 # surf2 = ax2.plot_surface(X, Y, Z0, cmap='gray', alpha=0.1, edgecolor=ggred)
 
 plt.show()
+prd.PPT_save_2d(fig1, ax1, 'pixel row grey.png')

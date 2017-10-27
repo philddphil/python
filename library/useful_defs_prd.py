@@ -79,7 +79,7 @@ def phase(x, A, B):
 def fit_phase():
     # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration
     # files\Phaseramp.mat'
-    f1 = r'..\..\Data\Calibration files\*Phaseramp.mat'
+    f1 = r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou\Phaseramp.mat"
     files = glob.glob(f1)
     phaseramp = io.loadmat(files[0])
 
@@ -99,7 +99,7 @@ def fit_phase():
     except RuntimeError:
         print("Error - curve_fit failed")
 
-    os.chdir(r"C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files")
+    os.chdir(r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
     cs = palette()
     fig2 = plt.figure('fig2')
     ax2 = fig2.add_subplot(1, 1, 1)
@@ -184,7 +184,7 @@ def variable_unpack(LabVIEW_data):
 # Generate hologram and save as bmp ###########################################
 def holo_gen(*LabVIEW_data):
     # Unpack parameters
-    os.chdir(r"C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files")
+    os.chdir(r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
     cs = palette()
 
     LCOS_δx = LabVIEW_data[0]
@@ -254,7 +254,7 @@ def holo_gen(*LabVIEW_data):
     Holo_out = H3_f
 
     # Save output
-    save_bmp(Holo_out, r'..\..\Data\bmps\hologram')
+    save_bmp(Holo_out, r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
 
     # Get phase profile plots and save (use tilt angle of 0 for plotting)
     Zs_p = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
@@ -282,8 +282,8 @@ def holo_gen(*LabVIEW_data):
     fig2.patch.set_facecolor(cs['mdk_dgrey'])
     ax2.set_xlabel('pixel')
     ax2.set_ylabel('grey value [0:255] axis')
-    plt.plot(h3_1_p, '.--', lw=0.5)
-    plt.plot(h1_p, '.--', lw=0.5)
+    plt.plot(h3_1_p[0:2 * np.round(Λ)], '.--', lw=0.5)
+    # plt.plot(h1_p, '.--', lw=0.5)
     PPT_save_2d(fig2, ax2, 'pixel row grey.png')
     plt.cla()
 
