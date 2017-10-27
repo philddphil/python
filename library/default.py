@@ -35,11 +35,11 @@ cs = prd.palette()
 ##############################################################################
 # Do some stuff
 ##############################################################################
-a = 4 * np.pi / 50
-
-x = np.linspace(0, 50)
-y = np.sin(a * x - a * 5)
-
+a = np.random.randint(2, size=(50, 50))
+b0 = np.array([0, 0, 0, 255, 255, 255])
+b = np.tile(b0, (1080, 320))
+print(np.shape(b))
+print(len(b0))
 
 ##############################################################################
 # Plot some figures
@@ -67,24 +67,22 @@ y = np.sin(a * x - a * 5)
 #     :, 0:a], color=cs['mdk_dgrey'], lw=0.5, alpha=1)
 
 
-fig1 = plt.figure('fig1')
-ax1 = fig1.add_subplot(1, 1, 1)
-fig1.patch.set_facecolor(cs['mdk_dgrey'])
-ax1.set_xlabel('x axis')
-ax1.set_ylabel('y axis')
-plt.plot(x, x, '.--')
-plt.plot(x, y, '.--')
+# fig1 = plt.figure('fig1')
+# ax1 = fig1.add_subplot(1, 1, 1)
+# fig1.patch.set_facecolor(cs['mdk_dgrey'])
+# ax1.set_xlabel('x axis')
+# ax1.set_ylabel('y axis')
+# plt.plot(x, x, '.--')
+# plt.plot(x, y, '.--')
 
 im3 = plt.figure('im3')
 ax3 = im3.add_subplot(1, 1, 1)
 im3.patch.set_facecolor(cs['mdk_dgrey'])
 ax3.set_xlabel('x axis')
 ax3.set_ylabel('y axis')
-plt.imshow(Z, label='X talk', extent=prd.extents(x) + prd.extents(y))
+plt.imshow(a)
 cb2 = plt.colorbar()
 plt.legend()
 
 
-
 plt.show()
-

@@ -19,116 +19,162 @@ from PIL import Image
 # Define some functions
 ###############################################################################
 
-
-# Generate holograms with first two parameters to optimise - Λ and φ ##########
-def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
-    # Generate meshgrid of coordinate points
-    x = np.arange(Hol_δx)
-    y = np.arange(Hol_δy)
-    [X, Y] = np.meshgrid(x, y)
-
-    # Calculate phase tilt angle from periodicity and usable phase range
-    θ = np.arctan((ϕ_uplim - ϕ_lwlim) / Λ)
-
-    # Convert offset from pixels into phase
-    of1 = off * (ϕ_uplim - ϕ_lwlim) / Λ
-    # Calculate tilted (unmodulated) phase profile
-    Z1 = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) - of1
-
-    # Calulate higher frequency sinsusoidal profile
-    Z2 = sin_amp * np.sin(4 * np.pi / Λ *
-                          (X * np.cos(φ) + Y * np.sin(φ)) -
-                          sin_off * 4 * np.pi / Λ -
-                          off * 4 * np.pi / Λ)
-
-    # Calculate blazed grating (no sinusoid)
-    Z1_mod = Z1 % (ϕ_uplim - ϕ_lwlim - 0.00000001)
-    Z1_mod = Z1_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z1_mod)) + ϕ_lwlim
-
-    # Calculate blazed grating + sinusoid
-    Z2_mod = (Z1 + Z2) % (ϕ_uplim - ϕ_lwlim - 0.00000001)
-    Z2_mod = Z2_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z2_mod)) + ϕ_lwlim
-
-    # Output all 4
-    Holo_s = (Z1, Z1_mod, Z2, Z2_mod)
-    return Holo_s
+###############################################################################
+# File & plotting defs
+###############################################################################
+# Modokai pallette for plotting ###############################################
 
 
-# Add sub hologram Z_mod to larger hologram (initially set to 0s) #############
-def add_holo(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
-    LCOSy = int(LCOSy)
-    LCOSx = int(LCOSx)
+def palette():
+    colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
+               'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
+               'mdk_lgrey': [96 / 255, 96 / 255, 84 / 255],
+               'mdk_green': [95 / 255, 164 / 255, 44 / 255],
+               'mdk_yellow': [229 / 255, 220 / 255, 90 / 255],
+               'mdk_blue': [75 / 255, 179 / 255, 232 / 255],
+               'mdk_orange': [224 / 255, 134 / 255, 31 / 255],
+               'mdk_pink': [180 / 255, 38 / 255, 86 / 255],
+               'rmp_dblue': [12 / 255, 35 / 255, 218 / 255],
+               'rmp_lblue': [46 / 255, 38 / 255, 86 / 255],
+               'rmp_pink': [210 / 255, 76 / 255, 197 / 255],
+               'rmp_green': [90 / 255, 166 / 255, 60 / 255],
+               'fibre9l_1': [234 / 255, 170 / 255, 255 / 255],
+               'fibre9l_2': [255 / 255, 108 / 255, 134 / 255],
+               'fibre9l_3': [255 / 255, 182 / 255, 100 / 255],
+               'fibre9l_4': [180 / 255, 151 / 255, 255 / 255],
+               'fibre9l_6': [248 / 255, 255 / 255, 136 / 255],
+               'fibre9l_7': [136 / 255, 172 / 255, 255 / 255],
+               'fibre9l_8': [133 / 255, 255 / 255, 226 / 255],
+               'fibre9l_9': [135 / 255, 255 / 255, 132 / 255],
+               'fibre9d_1': [95 / 255, 0 / 255, 125 / 255],
+               'fibre9d_2': [157 / 255, 0 / 255, 28 / 255],
+               'fibre9d_3': [155 / 255, 82 / 255, 0 / 255],
+               'fibre9d_4': [40 / 255, 0 / 255, 147 / 255],
+               'fibre9d_6': [119 / 255, 125 / 255, 0 / 255],
+               'fibre9d_7': [0 / 255, 39 / 255, 139 / 255],
+               'fibre9d_8': [0 / 255, 106 / 255, 85 / 255],
+               'fibre9d_9': [53 / 255, 119 / 255, 0 / 255]
+               }
 
-    Holo_f = np.zeros((LCOSy, LCOSx))
-    (Hol_δy, Hol_δx) = np.shape(Z_mod)
-    y1 = np.int(Hol_cy - np.floor(Hol_δy / 2))
-    y2 = np.int(Hol_cy + np.ceil(Hol_δy / 2))
-    x1 = np.int(Hol_cx - np.floor(Hol_δx / 2))
-    x2 = np.int(Hol_cx + np.ceil(Hol_δx / 2))
-    Holo_f[y1:y2, x1:x2] = Z_mod
-    return Holo_f
+    plt.style.use('ggplot')
+    plt.rcParams['font.size'] = 8
+    plt.rcParams['font.family'] = 'monospace'
+    plt.rcParams['font.fantasy'] = 'Nimbus Mono'
+    plt.rcParams['axes.labelsize'] = 8
+    plt.rcParams['axes.labelweight'] = 'normal'
+    plt.rcParams['xtick.labelsize'] = 8
+    plt.rcParams['ytick.labelsize'] = 8
+    plt.rcParams['legend.fontsize'] = 10
+    plt.rcParams['figure.titlesize'] = 10
+    plt.rcParams['lines.color'] = 'white'
+    plt.rcParams['text.color'] = colours['mdk_purple']
+    plt.rcParams['axes.labelcolor'] = colours['mdk_yellow']
+    plt.rcParams['xtick.color'] = colours['mdk_purple']
+    plt.rcParams['ytick.color'] = colours['mdk_purple']
+    plt.rcParams['axes.edgecolor'] = colours['mdk_lgrey']
+    plt.rcParams['savefig.edgecolor'] = colours['mdk_lgrey']
+    plt.rcParams['axes.facecolor'] = colours['mdk_dgrey']
+    plt.rcParams['savefig.facecolor'] = colours['mdk_dgrey']
+    plt.rcParams['grid.color'] = colours['mdk_lgrey']
+    plt.rcParams['grid.linestyle'] = ':'
+
+    return colours
 
 
-# Defining the functional form of grayscale to phase (g(ϕ)) ###################
-def phase(x, A, B):
-    ϕ = np.square(np.sin(A * (1 - np.exp(-B * x))))
-    return ϕ
-
-
-# Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
-def fit_phase():
-    # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration
-    # files\Phaseramp.mat'
-    f1 = r'..\..\Data\Calibration files\*Phaseramp.mat'
+# Load multiple .csvs #########################################################
+def load_multicsv(directory):
+    f1 = directory + r'\*.csv'
     files = glob.glob(f1)
-    phaseramp = io.loadmat(files[0])
+    data_all = np.array([])
+    for i1, val1 in enumerate(files[0:]):
+        data = np.genfromtxt(val1, delimiter=',')
+        data_all = np.append(data_all, data)
 
-    y_dB = phaseramp['P4'].ravel()
-    y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
-
-    x0 = np.linspace(0, 255, len(y_dB))
-    x1 = np.linspace(0, 255, 25)
-    x3 = range(255)
-    f1 = interp1d(x0, y_lin)
-    initial_guess = (15, 1 / 800)
-
-    try:
-        popt, pcov = opt.curve_fit(phase, x1, f1(
-            x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
-
-    except RuntimeError:
-        print("Error - curve_fit failed")
-
-    os.chdir(r"C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files")
-    cs = palette()
-    fig2 = plt.figure('fig2')
-    ax2 = fig2.add_subplot(1, 1, 1)
-    fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('pixel')
-    ax2.set_ylabel('grey value [0:255] axis')
-    plt.plot(x3, phase(x3, *popt), '--', lw=0.5)
-    plt.plot(x0, y_lin, '.', lw=0.5)
-    PPT_save_2d(fig2, ax2, 'python phase phit.png')
-    plt.cla()
-
-    ϕ_A = popt[0]
-    ϕ_B = popt[1]
-    ϕ_g = (2 / np.pi) * np.abs(ϕ_A) * (1 - np.exp(-ϕ_B * x3))
-
-    return (ϕ_A, ϕ_B, ϕ_g)
+    return data_all
 
 
-# Use the fitting results from 'fit_phase'  to remap hologram Z_mod ###########
-def remap_phase(Z_mod, g_ϕ):
-    Z_mod1 = copy.copy(Z_mod)
-    for i1 in range(np.shape(Z_mod)[0]):
-        Z_mod1[i1, :] = g_ϕ(Z_mod[i1, :])
-    return (Z_mod1)
+# Plot an image from a csv ####################################################
+def img_csv(file):
+    im = np.genfromtxt(file, delimiter=',')
+    im_size = np.shape(im)
+    y = np.arange(im_size[0])
+    x = np.arange(im_size[1])
+    X, Y = np.meshgrid(x, y)
+    coords = (X, Y)
+    return (im, coords)
 
 
-# Save a hologram (nupmy array) to a .bmp #####################################
-def save_bmp(Hologram, Path):
-    plt.imsave(Path + '.png', Hologram,
+# Save 3d plot as a colourscheme suitable for ppt, as a png ###################
+def PPT_save_3d(fig, ax, name):
+    plt.rcParams['text.color'] = 'xkcd:charcoal grey'
+    fig.patch.set_facecolor('xkcd:white')
+    ax.patch.set_facecolor('xkcd:white')
+    ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    fig.patch.set_alpha(0.0)
+    ax.patch.set_alpha(0.0)
+    ax.xaxis.label.set_color('xkcd:charcoal grey')
+    ax.yaxis.label.set_color('xkcd:charcoal grey')
+    ax.zaxis.label.set_color('xkcd:charcoal grey')
+    ax.tick_params(axis='x', colors='xkcd:charcoal grey')
+    ax.tick_params(axis='y', colors='xkcd:charcoal grey')
+    ax.tick_params(axis='z', colors='xkcd:charcoal grey')
+    fig.savefig(name)
+
+
+# Save 2d plot as a colourscheme suitable for ppt, as a png ###################
+def PPT_save_2d(fig, ax, name):
+    plt.rcParams['text.color'] = 'xkcd:charcoal grey'
+    plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
+    ax.patch.set_facecolor((1.0, 1.0, 1.0, 0.0))
+    ax.xaxis.label.set_color('xkcd:charcoal grey')
+    ax.yaxis.label.set_color('xkcd:charcoal grey')
+    ax.tick_params(axis='x', colors='xkcd:charcoal grey')
+    ax.tick_params(axis='y', colors='xkcd:charcoal grey')
+
+    ax.figure.savefig(name)
+
+
+# Save 2d image as a colourscheme suitable for ppt, as a png ##################
+def PPT_save_2d_im(fig, ax, cb, name):
+    plt.rcParams['text.color'] = 'xkcd:charcoal grey'
+    plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
+    ax.patch.set_facecolor((1.0, 1.0, 1.0, 0.0))
+    ax.xaxis.label.set_color('xkcd:charcoal grey')
+    ax.yaxis.label.set_color('xkcd:charcoal grey')
+    ax.tick_params(axis='x', colors='xkcd:charcoal grey')
+    ax.tick_params(axis='y', colors='xkcd:charcoal grey')
+    cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
+    plt.setp(cbytick_obj, color='xkcd:charcoal grey')
+
+    ax.figure.savefig(name)
+
+
+# Smooth a numpy image array ##################################################
+def img_clean(im):
+    im_size = np.shape(im)
+    y = np.arange(im_size[0])
+    x = np.arange(im_size[1])
+    y1 = np.arange(0, im_size[0], 10)
+    x1 = np.arange(0, im_size[1], 10)
+
+    X, Y = np.meshgrid(x, y)
+    coords = (X, Y)
+    X1, Y1 = np.meshgrid(x1, y1)
+    coords1 = (X1, Y1)
+
+    RBS_f = RectBivariateSpline(y, x, im)
+    RBS_im = RBS_f(y1, x1)
+    G_RBS_im = gaussian_filter(RBS_im, 10)
+    G_RBS = RectBivariateSpline(y1, x1, G_RBS_im)
+    smooth_im = G_RBS(y, x)
+    return smooth_im
+
+
+# Save a hologram (nupmy array) to a gray scale bmp ###########################
+def save_bmp(X, Path):
+    plt.imsave(Path + '.png', X,
                cmap=plt.cm.gray, vmin=0, vmax=255)
     file_in = Path + '.png'
     img = Image.open(file_in)
@@ -136,6 +182,9 @@ def save_bmp(Hologram, Path):
     img.save(file_out)
 
 
+###############################################################################
+# Hologram defs
+###############################################################################
 # Overshoot mapping ###########################################################
 def overshoot_phase(Z_mod1, g_OSlw, g_OSup, g_min, g_max):
     Z_mod2 = copy.copy(Z_mod1)
@@ -241,15 +290,15 @@ def holo_gen(*LabVIEW_data):
     # H1_f = add_holo(*Hol_cyx, H1_1, *LCOS_δyx)
     H3_f = add_holo(*Hol_cyx, H3_1, *LCOS_δyx)
 
-    im2 = plt.figure('im2')
-    ax2 = im2.add_subplot(1, 1, 1)
-    im2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('x axis')
-    ax2.set_ylabel('y axis')
-    plt.imshow(H3, cmap='gray', vmin=0, vmax=255)
-    cb2 = plt.colorbar()
-    PPT_save_2d_im(im2, ax2, cb2, 'sub hologram1.png')
-    plt.clf()
+    # im2 = plt.figure('im2')
+    # ax2 = im2.add_subplot(1, 1, 1)
+    # im2.patch.set_facecolor(cs['mdk_dgrey'])
+    # ax2.set_xlabel('x axis')
+    # ax2.set_ylabel('y axis')
+    # plt.imshow(H3, cmap='gray', vmin=0, vmax=255)
+    # cb2 = plt.colorbar()
+    # PPT_save_2d_im(im2, ax2, cb2, 'sub hologram1.png')
+    # plt.clf()
     # Set output holograms (Z_out, Holo_out)
     Holo_out = H3_f
 
@@ -264,49 +313,46 @@ def holo_gen(*LabVIEW_data):
     Z2_p = Zs_p[2]
     Z3_p = Zs_p[3]
 
-    z0_p = Z0_p[:, 0]
-    z1_p = Z1_p[:, 0]
-    z2_p = Z2_p[:, 0]
-    z3_p = Z3_p[:, 0]
+    z0_p = Z0_p[0:2 * int(Λ), 0]
+    z1_p = Z1_p[0:2 * int(Λ), 0]
+    z2_p = Z2_p[0:2 * int(Λ), 0]
+    z3_p = Z3_p[0:2 * int(Λ), 0]
 
     H1_p = remap_phase(Z1_p, g_ϕ)
     H1_1_p = overshoot_phase(H1_p, g_OSlw, g_OSup, g_min, g_max)
     H3_p = remap_phase(Z3_p, g_ϕ)
     H3_1_p = overshoot_phase(H3_p, g_OSlw, g_OSup, g_min, g_max)
 
-    h1_p = H1_p[:, int(Λ / 2)]
-    h3_1_p = H3_1_p[:, int(Λ / 2)]
+    h1_p = H1_p[0:2 * int(Λ), int(Λ / 2)]
+    h3_1_p = H3_1_p[0:2 * int(Λ), int(Λ / 2)]
 
-    fig2 = plt.figure('fig2')
-    ax2 = fig2.add_subplot(1, 1, 1)
-    fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('pixel')
-    ax2.set_ylabel('grey value [0:255] axis')
-    plt.plot(h3_1_p, '.--', lw=0.5)
-    plt.plot(h1_p, '.--', lw=0.5)
-    PPT_save_2d(fig2, ax2, 'pixel row grey.png')
-    plt.cla()
+    # fig2 = plt.figure('fig2')
+    # ax2 = fig2.add_subplot(1, 1, 1)
+    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    # ax2.set_xlabel('pixel')
+    # ax2.set_ylabel('grey value [0:255] axis')
+    # plt.plot(h3_1_p, '.--', lw=0.5)
+    # PPT_save_2d(fig2, ax2, 'pixel row grey.png')
+    # plt.cla()
 
-    fig2 = plt.figure('fig2')
-    ax2 = fig2.add_subplot(1, 1, 1)
-    fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('pixel')
-    ax2.set_ylabel('grey value [0:255] axis')
-    plt.plot(z1_p, '.--', lw=0.5)
-    plt.plot(z3_p, '.--', lw=0.5)
-    plt.plot(z2_p, '.--', lw=0.5)
-    PPT_save_2d(fig2, ax2, 'pixel row phase.png')
-    plt.cla()
+    # fig2 = plt.figure('fig2')
+    # ax2 = fig2.add_subplot(1, 1, 1)
+    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    # ax2.set_xlabel('pixel')
+    # ax2.set_ylabel('grey value [0:255] axis')
+    # plt.plot(z3_p, '.--', lw=0.5)
+    # PPT_save_2d(fig2, ax2, 'pixel row phase.png')
+    # plt.cla()
 
-    im2 = plt.figure('im2')
-    ax2 = im2.add_subplot(1, 1, 1)
-    im2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('x axis')
-    ax2.set_ylabel('y axis')
-    plt.imshow(H3_1_p, cmap='gray')
-    cb2 = plt.colorbar()
-    PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
-    plt.clf()
+    # im2 = plt.figure('im2')
+    # ax2 = im2.add_subplot(1, 1, 1)
+    # im2.patch.set_facecolor(cs['mdk_dgrey'])
+    # ax2.set_xlabel('x axis')
+    # ax2.set_ylabel('y axis')
+    # plt.imshow(H3_1_p, cmap='gray')
+    # cb2 = plt.colorbar()
+    # PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
+    # plt.clf()
 
     np.savetxt('phaseprofile0.csv', z1_p, delimiter=',')
     np.savetxt('greyprofile0.csv', h1_p, delimiter=',')
@@ -344,6 +390,118 @@ def phase_plot(*LabVIEW_data):
     return (ϕ_min, ϕ_max, g_ϕ)
 
 
+# Generate holograms with first two parameters to optimise - Λ and φ ##########
+def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
+    # Generate meshgrid of coordinate points
+    x = np.arange(Hol_δx)
+    y = np.arange(Hol_δy)
+    [X, Y] = np.meshgrid(x, y)
+
+    # Calculate phase tilt angle from periodicity and usable phase range
+    θ = np.arctan((ϕ_uplim - ϕ_lwlim) / Λ)
+
+    # Convert offset from pixels into phase
+    of1 = off * (ϕ_uplim - ϕ_lwlim) / Λ
+    # Calculate tilted (unmodulated) phase profile
+    Z1 = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) - of1
+
+    # Calulate higher frequency sinsusoidal profile
+    Z2 = sin_amp * np.sin(4 * np.pi / Λ *
+                          (X * np.cos(φ) + Y * np.sin(φ)) -
+                          sin_off * 4 * np.pi / Λ -
+                          off * 4 * np.pi / Λ)
+
+    # Calculate blazed grating (no sinusoid)
+    Z1_mod = Z1 % (ϕ_uplim - ϕ_lwlim - 0.00000001)
+    Z1_mod = Z1_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z1_mod)) + ϕ_lwlim
+
+    # Calculate blazed grating + sinusoid
+    Z2_mod = (Z1 + Z2) % (ϕ_uplim - ϕ_lwlim - 0.00000001)
+    Z2_mod = Z2_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z2_mod)) + ϕ_lwlim
+
+    # Output all 4
+    Holo_s = (Z1, Z1_mod, Z2, Z2_mod)
+    return Holo_s
+
+
+# Add sub hologram Z_mod to larger hologram (initially set to 0s) #############
+def add_holo(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
+    LCOSy = int(LCOSy)
+    LCOSx = int(LCOSx)
+    b0 = np.array([0, 255])
+    Holo_f = np.tile(b0, (LCOSy, int(LCOSx / len(b0))))
+    # Holo_f = 255*np.random.randint(2, size=(LCOSy, LCOSx))
+    # Holo_f = np.random.randint(255, size=(LCOSy, LCOSx))
+    # Holo_f = np.zeros((LCOSy, LCOSx))
+    (Hol_δy, Hol_δx) = np.shape(Z_mod)
+    y1 = np.int(Hol_cy - np.floor(Hol_δy / 2))
+    y2 = np.int(Hol_cy + np.ceil(Hol_δy / 2))
+    x1 = np.int(Hol_cx - np.floor(Hol_δx / 2))
+    x2 = np.int(Hol_cx + np.ceil(Hol_δx / 2))
+    Holo_f[y1:y2, x1:x2] = Z_mod
+    return Holo_f
+
+
+# Defining the functional form of grayscale to phase (g(ϕ)) ###################
+def phase(x, A, B):
+    ϕ = np.square(np.sin(A * (1 - np.exp(-B * x))))
+    return ϕ
+
+
+# Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
+def fit_phase():
+    # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration
+    # files\Phaseramp.mat'
+    f1 = r'..\..\Data\Calibration files\*Phaseramp.mat'
+    files = glob.glob(f1)
+    phaseramp = io.loadmat(files[0])
+
+    y_dB = phaseramp['P4'].ravel()
+    y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+
+    x0 = np.linspace(0, 255, len(y_dB))
+    x1 = np.linspace(0, 255, 25)
+    x3 = range(255)
+    f1 = interp1d(x0, y_lin)
+    initial_guess = (15, 1 / 800)
+
+    try:
+        popt, pcov = opt.curve_fit(phase, x1, f1(
+            x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
+
+    except RuntimeError:
+        print("Error - curve_fit failed")
+
+    # os.chdir(r"C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files")
+    # cs = palette()
+    # fig2 = plt.figure('fig2')
+    # ax2 = fig2.add_subplot(1, 1, 1)
+    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    # ax2.set_xlabel('pixel')
+    # ax2.set_ylabel('grey value [0:255] axis')
+    # plt.plot(x3, phase(x3, *popt), '--', lw=0.5)
+    # plt.plot(x0, y_lin, '.', lw=0.5)
+    # PPT_save_2d(fig2, ax2, 'python phase phit.png')
+    # plt.cla()
+
+    ϕ_A = popt[0]
+    ϕ_B = popt[1]
+    ϕ_g = (2 / np.pi) * np.abs(ϕ_A) * (1 - np.exp(-ϕ_B * x3))
+
+    return (ϕ_A, ϕ_B, ϕ_g)
+
+
+# Use the fitting results from 'fit_phase'  to remap hologram Z_mod ###########
+def remap_phase(Z_mod, g_ϕ):
+    Z_mod1 = copy.copy(Z_mod)
+    for i1 in range(np.shape(Z_mod)[0]):
+        Z_mod1[i1, :] = g_ϕ(Z_mod[i1, :])
+    return (Z_mod1)
+
+
+###############################################################################
+# Maths defs
+###############################################################################
 # Generic 1D Gaussian function ################################################
 def Gaussian_1D(x, A, xo, σ_x, bkg):
     xo = float(xo)
@@ -397,75 +555,6 @@ def running_mean(x, N):
     return (cumsum[N:] - cumsum[:-N]) / N
 
 
-# Save 3d plot as a colourscheme suitable for ppt, as a png ###################
-def PPT_save_3d(fig, ax, name):
-    plt.rcParams['text.color'] = 'xkcd:black'
-    fig.patch.set_facecolor('xkcd:white')
-    ax.patch.set_facecolor('xkcd:white')
-    ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    fig.patch.set_alpha(0.0)
-    ax.patch.set_alpha(0.0)
-    ax.xaxis.label.set_color('xkcd:black')
-    ax.yaxis.label.set_color('xkcd:black')
-    ax.zaxis.label.set_color('xkcd:black')
-    ax.tick_params(axis='x', colors='xkcd:black')
-    ax.tick_params(axis='y', colors='xkcd:black')
-    ax.tick_params(axis='z', colors='xkcd:black')
-    fig.savefig(name)
-
-
-# Save 2d plot as a colourscheme suitable for ppt, as a png ###################
-def PPT_save_2d(fig, ax, name):
-    plt.rcParams['text.color'] = 'xkcd:black'
-    plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
-    ax.patch.set_facecolor((1.0, 1.0, 1.0, 0.0))
-    ax.xaxis.label.set_color('xkcd:black')
-    ax.yaxis.label.set_color('xkcd:black')
-    ax.tick_params(axis='x', colors='xkcd:black')
-    ax.tick_params(axis='y', colors='xkcd:black')
-
-    ax.figure.savefig(name)
-
-
-# Save 2d image as a colourscheme suitable for ppt, as a png ##################
-def PPT_save_2d_im(fig, ax, cb, name):
-    cs = palette()
-    plt.rcParams['text.color'] = 'xkcd:black'
-    plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
-    ax.patch.set_facecolor((1.0, 1.0, 1.0, 0.0))
-    ax.xaxis.label.set_color('xkcd:black')
-    ax.yaxis.label.set_color('xkcd:black')
-    ax.tick_params(axis='x', colors='xkcd:black')
-    ax.tick_params(axis='y', colors='xkcd:black')
-    cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
-    plt.setp(cbytick_obj, color='xkcd:black')
-
-    ax.figure.savefig(name)
-
-
-# Smooth a numpy image array ##################################################
-def img_clean(im):
-    im_size = np.shape(im)
-    y = np.arange(im_size[0])
-    x = np.arange(im_size[1])
-    y1 = np.arange(0, im_size[0], 10)
-    x1 = np.arange(0, im_size[1], 10)
-
-    X, Y = np.meshgrid(x, y)
-    coords = (X, Y)
-    X1, Y1 = np.meshgrid(x1, y1)
-    coords1 = (X1, Y1)
-
-    RBS_f = RectBivariateSpline(y, x, im)
-    RBS_im = RBS_f(y1, x1)
-    G_RBS_im = gaussian_filter(RBS_im, 10)
-    G_RBS = RectBivariateSpline(y1, x1, G_RBS_im)
-    smooth_im = G_RBS(y, x)
-    return smooth_im
-
-
 # Gaussian blur an image n times ##############################################
 def n_G_blurs(im, n):
     im_out = im
@@ -481,91 +570,11 @@ def rms(a):
     return b
 
 
-# Find the RMS of array a #####################################################
-def img_csv(file):
-    im = np.genfromtxt(file, delimiter=',')
-    im_size = np.shape(im)
-    y = np.arange(im_size[0])
-    x = np.arange(im_size[1])
-    X, Y = np.meshgrid(x, y)
-    coords = (X, Y)
-    return (im, coords)
-
-
-# Return the element location of the max of array a ###########################
-def max_i_2d(a):
-    b = np.unravel_index(a.argmax(), a.shape)
-    return(b)
-
-
-# Modokai pallette for plotting ###############################################
-def palette():
-    colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
-               'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
-               'mdk_lgrey': [96 / 255, 96 / 255, 84 / 255],
-               'mdk_green': [95 / 255, 164 / 255, 44 / 255],
-               'mdk_yellow': [229 / 255, 220 / 255, 90 / 255],
-               'mdk_blue': [75 / 255, 179 / 255, 232 / 255],
-               'mdk_orange': [224 / 255, 134 / 255, 31 / 255],
-               'mdk_pink': [180 / 255, 38 / 255, 86 / 255],
-               'rmp_dblue': [12 / 255, 35 / 255, 218 / 255],
-               'rmp_lblue': [46 / 255, 38 / 255, 86 / 255],
-               'rmp_pink': [210 / 255, 76 / 255, 197 / 255],
-               'rmp_green': [90 / 255, 166 / 255, 60 / 255],
-               'fibre9l_1': [234 / 255, 170 / 255, 255 / 255],
-               'fibre9l_2': [255 / 255, 108 / 255, 134 / 255],
-               'fibre9l_3': [255 / 255, 182 / 255, 100 / 255],
-               'fibre9l_4': [180 / 255, 151 / 255, 255 / 255],
-               'fibre9l_6': [248 / 255, 255 / 255, 136 / 255],
-               'fibre9l_7': [136 / 255, 172 / 255, 255 / 255],
-               'fibre9l_8': [133 / 255, 255 / 255, 226 / 255],
-               'fibre9l_9': [135 / 255, 255 / 255, 132 / 255],
-               'fibre9d_1': [95 / 255, 0 / 255, 125 / 255],
-               'fibre9d_2': [157 / 255, 0 / 255, 28 / 255],
-               'fibre9d_3': [155 / 255, 82 / 255, 0 / 255],
-               'fibre9d_4': [40 / 255, 0 / 255, 147 / 255],
-               'fibre9d_6': [119 / 255, 125 / 255, 0 / 255],
-               'fibre9d_7': [0 / 255, 39 / 255, 139 / 255],
-               'fibre9d_8': [0 / 255, 106 / 255, 85 / 255],
-               'fibre9d_9': [53 / 255, 119 / 255, 0 / 255],
-               'ggplot_r': [226 / 255, 74 / 255, 51 / 255]
-               }
-
-    plt.style.use('ggplot')
-    plt.rcParams['font.size'] = 8
-    plt.rcParams['font.family'] = 'monospace'
-    plt.rcParams['font.fantasy'] = 'Nimbus Mono'
-    plt.rcParams['axes.labelsize'] = 8
-    plt.rcParams['axes.labelweight'] = 'normal'
-    plt.rcParams['xtick.labelsize'] = 8
-    plt.rcParams['ytick.labelsize'] = 8
-    plt.rcParams['legend.fontsize'] = 10
-    plt.rcParams['figure.titlesize'] = 10
-    plt.rcParams['lines.color'] = 'white'
-    plt.rcParams['text.color'] = colours['mdk_purple']
-    plt.rcParams['axes.labelcolor'] = colours['mdk_yellow']
-    plt.rcParams['xtick.color'] = colours['mdk_purple']
-    plt.rcParams['ytick.color'] = colours['mdk_purple']
-    plt.rcParams['axes.edgecolor'] = colours['mdk_lgrey']
-    plt.rcParams['savefig.edgecolor'] = colours['mdk_lgrey']
-    plt.rcParams['axes.facecolor'] = colours['mdk_dgrey']
-    plt.rcParams['savefig.facecolor'] = colours['mdk_dgrey']
-    plt.rcParams['grid.color'] = colours['mdk_lgrey']
-    plt.rcParams['grid.linestyle'] = ':'
-
-    return colours
-
-
-# Load multiple .csvs #########################################################
-def load_multicsv(directory):
-    f1 = directory + r'\*.csv'
-    files = glob.glob(f1)
-    data_all = np.array([])
-    for i1, val1 in enumerate(files[0:]):
-        data = np.genfromtxt(val1, delimiter=',')
-        data_all = np.append(data_all, data)
-
-    return data_all
+# Polar to cartesian coords ###################################################
+def pol2cart(ρ, ϕ):
+    x = ρ * np.cos(ϕ)
+    y = ρ * np.sin(ϕ)
+    return(x, y)
 
 
 # Cartesian to polar coords ###################################################
@@ -575,14 +584,7 @@ def cart2pol(x, y):
     return(ρ, ϕ)
 
 
-# Polar to cartesian coords####################################################
-def pol2cart(ρ, ϕ):
-    x = ρ * np.cos(ϕ)
-    y = ρ * np.sin(ϕ)
-    return(x, y)
-
-
-# Define extents for use in plotting arrays of data with x/y axis
-def extents(f):
-    delta = f[1] - f[0]
-    return [f[0] - delta / 2, f[-1] + delta / 2]
+# Return the element location of the max of array a ###########################
+def max_i_2d(a):
+    b = np.unravel_index(a.argmax(), a.shape)
+    return(b)
