@@ -122,6 +122,16 @@ def PPT_save_3d(fig, ax, name):
     ax.tick_params(axis='z', colors='xkcd:charcoal grey')
     fig.savefig(name)
 
+<<<<<<< HEAD
+=======
+# Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
+def fit_phase():
+    # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration
+    # files\Phaseramp.mat'
+    f1 = r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou\Phaseramp.mat"
+    files = glob.glob(f1)
+    phaseramp = io.loadmat(files[0])
+>>>>>>> 2fad755f1a05a1cb659c51b0e79ba3f874105a35
 
 # Save 2d plot as a colourscheme suitable for ppt, as a png ###################
 def PPT_save_2d(fig, ax, name):
@@ -148,7 +158,21 @@ def PPT_save_2d_im(fig, ax, cb, name):
     cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
     plt.setp(cbytick_obj, color='xkcd:charcoal grey')
 
+<<<<<<< HEAD
     ax.figure.savefig(name)
+=======
+    os.chdir(r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
+    cs = palette()
+    fig2 = plt.figure('fig2')
+    ax2 = fig2.add_subplot(1, 1, 1)
+    fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('pixel')
+    ax2.set_ylabel('grey value [0:255] axis')
+    plt.plot(x3, phase(x3, *popt), '--', lw=0.5)
+    plt.plot(x0, y_lin, '.', lw=0.5)
+    PPT_save_2d(fig2, ax2, 'python phase phit.png')
+    plt.cla()
+>>>>>>> 2fad755f1a05a1cb659c51b0e79ba3f874105a35
 
 
 # Smooth a numpy image array ##################################################
@@ -233,7 +257,7 @@ def variable_unpack(LabVIEW_data):
 # Generate hologram and save as bmp ###########################################
 def holo_gen(*LabVIEW_data):
     # Unpack parameters
-    os.chdir(r"C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files")
+    os.chdir(r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
     cs = palette()
 
     LCOS_δx = LabVIEW_data[0]
@@ -303,7 +327,7 @@ def holo_gen(*LabVIEW_data):
     Holo_out = H3_f
 
     # Save output
-    save_bmp(Holo_out, r'..\..\Data\bmps\hologram')
+    save_bmp(Holo_out, r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
 
     # Get phase profile plots and save (use tilt angle of 0 for plotting)
     Zs_p = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
@@ -323,6 +347,7 @@ def holo_gen(*LabVIEW_data):
     H3_p = remap_phase(Z3_p, g_ϕ)
     H3_1_p = overshoot_phase(H3_p, g_OSlw, g_OSup, g_min, g_max)
 
+<<<<<<< HEAD
     h1_p = H1_p[0:2 * int(Λ), int(Λ / 2)]
     h3_1_p = H3_1_p[0:2 * int(Λ), int(Λ / 2)]
 
@@ -353,6 +378,41 @@ def holo_gen(*LabVIEW_data):
     # cb2 = plt.colorbar()
     # PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
     # plt.clf()
+=======
+    h1_p = H1_p[:, int(Λ / 2)]
+    h3_1_p = H3_1_p[:, int(Λ / 2)]
+
+    fig2 = plt.figure('fig2')
+    ax2 = fig2.add_subplot(1, 1, 1)
+    fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('pixel')
+    ax2.set_ylabel('grey value [0:255] axis')
+    plt.plot(h3_1_p[0:2 * np.round(Λ)], '.--', lw=0.5)
+    # plt.plot(h1_p, '.--', lw=0.5)
+    PPT_save_2d(fig2, ax2, 'pixel row grey.png')
+    plt.cla()
+
+    fig2 = plt.figure('fig2')
+    ax2 = fig2.add_subplot(1, 1, 1)
+    fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('pixel')
+    ax2.set_ylabel('grey value [0:255] axis')
+    plt.plot(z1_p, '.--', lw=0.5)
+    plt.plot(z3_p, '.--', lw=0.5)
+    plt.plot(z2_p, '.--', lw=0.5)
+    PPT_save_2d(fig2, ax2, 'pixel row phase.png')
+    plt.cla()
+
+    im2 = plt.figure('im2')
+    ax2 = im2.add_subplot(1, 1, 1)
+    im2.patch.set_facecolor(cs['mdk_dgrey'])
+    ax2.set_xlabel('x axis')
+    ax2.set_ylabel('y axis')
+    plt.imshow(H3_1_p, cmap='gray')
+    cb2 = plt.colorbar()
+    PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
+    plt.clf()
+>>>>>>> 2fad755f1a05a1cb659c51b0e79ba3f874105a35
 
     np.savetxt('phaseprofile0.csv', z1_p, delimiter=',')
     np.savetxt('greyprofile0.csv', h1_p, delimiter=',')
