@@ -19,12 +19,11 @@ from PIL import Image
 # Define some functions
 ###############################################################################
 
+
 ###############################################################################
 # File & plotting defs
 ###############################################################################
 # Modokai pallette for plotting ###############################################
-
-
 def palette():
     colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
                'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
@@ -244,7 +243,6 @@ def variable_unpack(LabVIEW_data):
 # Generate hologram and save as bmp ###########################################
 def holo_gen(*LabVIEW_data):
     # Unpack parameters
-    os.chdir(r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
     cs = palette()
 
     LCOS_δx = LabVIEW_data[0]
@@ -283,7 +281,6 @@ def holo_gen(*LabVIEW_data):
 
     # Calculate sub hologram (Holo_s)
     Zs = holo_tilt(*Holo_params, sin_amp, sin_off)
-    print(*Holo_params, sin_amp, sin_off)
     Z0 = Zs[0]
     Z1 = Zs[1]
     Z2 = Zs[2]
@@ -299,7 +296,7 @@ def holo_gen(*LabVIEW_data):
 
     # Calculate full holograms (Holo_f)
     # H1_f = add_holo(*Hol_cyx, H1_1, *LCOS_δyx)
-    H3_f = add_holo(*Hol_cyx, H3_1, *LCOS_δyx)
+    H3_f = add_holo_LCOS(*Hol_cyx, H3_1, *LCOS_δyx)
 
     # im2 = plt.figure('im2')
     # ax2 = im2.add_subplot(1, 1, 1)
@@ -314,11 +311,10 @@ def holo_gen(*LabVIEW_data):
     Holo_out = H3_f
 
     # Save output
-    save_bmp(Holo_out, r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
+    save_bmp(Holo_out, r"..\..\Data\bmps\hologram")
 
     # Get phase profile plots and save (use tilt angle of 0 for plotting)
     Zs_p = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
-    print(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
     Z0_p = Zs_p[0]
     Z1_p = Zs_p[1]
     Z2_p = Zs_p[2]
@@ -364,39 +360,39 @@ def holo_gen(*LabVIEW_data):
     # cb2 = plt.colorbar()
     # PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
     # plt.clf()
-    h1_p = H1_p[:, int(Λ / 2)]
-    h3_1_p = H3_1_p[:, int(Λ / 2)]
+    # h1_p = H1_p[:, int(Λ / 2)]
+    # h3_1_p = H3_1_p[:, int(Λ / 2)]
 
-    fig2 = plt.figure('fig2')
-    ax2 = fig2.add_subplot(1, 1, 1)
-    fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('pixel')
-    ax2.set_ylabel('grey value [0:255] axis')
-    plt.plot(h3_1_p[0:2 * np.round(Λ)], '.--', lw=0.5)
-    # plt.plot(h1_p, '.--', lw=0.5)
-    PPT_save_2d(fig2, ax2, 'pixel row grey.png')
-    plt.cla()
+    # fig2 = plt.figure('fig2')
+    # ax2 = fig2.add_subplot(1, 1, 1)
+    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    # ax2.set_xlabel('pixel')
+    # ax2.set_ylabel('grey value [0:255] axis')
+    # plt.plot(h3_1_p[0:2 * np.round(Λ)], '.--', lw=0.5)
+    # # plt.plot(h1_p, '.--', lw=0.5)
+    # PPT_save_2d(fig2, ax2, 'pixel row grey.png')
+    # plt.cla()
 
-    fig2 = plt.figure('fig2')
-    ax2 = fig2.add_subplot(1, 1, 1)
-    fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('pixel')
-    ax2.set_ylabel('grey value [0:255] axis')
-    plt.plot(z1_p, '.--', lw=0.5)
-    plt.plot(z3_p, '.--', lw=0.5)
-    plt.plot(z2_p, '.--', lw=0.5)
-    PPT_save_2d(fig2, ax2, 'pixel row phase.png')
-    plt.cla()
+    # fig2 = plt.figure('fig2')
+    # ax2 = fig2.add_subplot(1, 1, 1)
+    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
+    # ax2.set_xlabel('pixel')
+    # ax2.set_ylabel('grey value [0:255] axis')
+    # plt.plot(z1_p, '.--', lw=0.5)
+    # plt.plot(z3_p, '.--', lw=0.5)
+    # plt.plot(z2_p, '.--', lw=0.5)
+    # PPT_save_2d(fig2, ax2, 'pixel row phase.png')
+    # plt.cla()
 
-    im2 = plt.figure('im2')
-    ax2 = im2.add_subplot(1, 1, 1)
-    im2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('x axis')
-    ax2.set_ylabel('y axis')
-    plt.imshow(H3_1_p, cmap='gray')
-    cb2 = plt.colorbar()
-    PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
-    plt.clf()
+    # im2 = plt.figure('im2')
+    # ax2 = im2.add_subplot(1, 1, 1)
+    # im2.patch.set_facecolor(cs['mdk_dgrey'])
+    # ax2.set_xlabel('x axis')
+    # ax2.set_ylabel('y axis')
+    # plt.imshow(H3_1_p, cmap='gray')
+    # cb2 = plt.colorbar()
+    # PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
+    # plt.clf()
 
     np.savetxt('phaseprofile0.csv', z1_p, delimiter=',')
     np.savetxt('greyprofile0.csv', h1_p, delimiter=',')
@@ -435,6 +431,37 @@ def phase_plot(*LabVIEW_data):
 
 
 # Generate holograms with first two parameters to optimise - Λ and φ ##########
+def phase_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off):
+    # Generate meshgrid of coordinate points
+    x = np.arange(Hol_δx)
+    y = np.arange(Hol_δy)
+    [X, Y] = np.meshgrid(x, y)
+
+    # Calculate phase tilt angle from periodicity and usable phase range
+    θ = np.arctan((ϕ_uplim - ϕ_lwlim) / Λ)
+
+    # Convert offset from pixels into phase
+    of1 = off * (ϕ_uplim - ϕ_lwlim) / Λ
+
+    # Calculate tilted (unmodulated) phase profile
+    Z1 = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) - of1
+
+    # Output all 4
+    return Z1
+def sin_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
+    # Generate meshgrid of coordinate points
+    x = np.arange(Hol_δx)
+    y = np.arange(Hol_δy)
+    [X, Y] = np.meshgrid(x, y)
+
+    # Calulate higher frequency sinsusoidal profile
+    Z2 = sin_amp * np.sin(4 * np.pi / Λ *
+                          (X * np.cos(φ) + Y * np.sin(φ)) -
+                          sin_off * 4 * np.pi / Λ -
+                          off * 4 * np.pi / Λ)
+    return Z2
+
+    # Generate holograms with first two parameters to optimise - Λ and φ #####
 def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
     # Generate meshgrid of coordinate points
     x = np.arange(Hol_δx)
@@ -446,6 +473,7 @@ def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_of
 
     # Convert offset from pixels into phase
     of1 = off * (ϕ_uplim - ϕ_lwlim) / Λ
+
     # Calculate tilted (unmodulated) phase profile
     Z1 = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) - of1
 
@@ -469,7 +497,7 @@ def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_of
 
 
 # Add sub hologram Z_mod to larger hologram (initially set to 0s) #############
-def add_holo(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
+def add_holo_LCOS(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
     LCOSy = int(LCOSy)
     LCOSx = int(LCOSx)
     b0 = np.array([0, 255])

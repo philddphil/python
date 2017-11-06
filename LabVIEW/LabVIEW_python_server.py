@@ -10,7 +10,6 @@ import os
 import glob
 import matplotlib.pyplot as plt
 
-
 import useful_defs_prd as prd
 
 from struct import *
@@ -45,8 +44,9 @@ while True:
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'DISP' in str(cmnd):
-        # Do the play action
-        print(call_time + ' DISP')
+        # Display a hologram
+        print('DISP')
+        print(call_time)
         hol_data = str(cmnd)
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
@@ -54,6 +54,8 @@ while True:
         values = prd.variable_unpack(LabVIEW_data)
         hol_values = dict(zip(variables, values))
         prd.holo_gen(*LabVIEW_data)
+        print(hol_values['LCOS_dx'])
+        print(hol_values)
         conn.sendall(b'PLAY-DONE')
 
     elif 'FINDp' in str(cmnd):
@@ -204,20 +206,52 @@ while True:
         conn.sendall(b'PICO-DONE')
 
     elif 'BOTHP' in str(cmnd):
+        p_P = r'..\..\Data\Calibration files\PCT400_last.csv'
+        last_Ps = np.genfromtxt(p_P, delimiter=',')
+        last_CT400 = last_Ps[0]
+        last_PL = last_Ps[1]
+        print('LAST-Power')
+        print('+1 order = ' + str(np.round(last_CT400, 3)) + ' dB')
+        print('-1 order = ' + str(np.round(last_PL, 3)) + ' dB')
+        print('X-talk = ' + str(np.round(np.abs(last_CT400 - last_PL), 3)) +
+              ' dB')
         print('BOTH-Powers')
         BothPs_data = str(cmnd)
         P = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', BothPs_data)]
         print('+1 order = ' + str(np.round(P[0], 3)) + ' dB')
         print('-1 order = ' + str(np.round(P[1], 3)) + ' dB')
         print('X-talk = ' + str(np.round(np.abs(P[0] - P[1]), 3)) + ' dB')
-        data_out = ''
+        np.savetxt(p_P, np.array(P), delimiter=',')
+        conn.sendall(bytes('BOTHP-DONE', 'utf-8'))
+
+    elif 'LOOP1' in str(cmnd):
+        print('LOOP1')
+        It_py = r'..\..\Data\Python loop\Iterations.txt'
+        It_no = np.genfromtxt(It_py)
+        print('Loop # ' + str(np.round(It_no, 0)))
+
+        values[3] = values[1] / 2
+        if It_no == 0:
+
+            values[5] = values[1] / 4
+            f = open(It_py, "w")
+            f.write(str(1))
+            f.close()
+            loop_out = 0
+
+        elif It_no == 1:
+            values[5] = 3 * values[1] / 4
+            loop_out = 1
+
+        data_out = (str(round(loop_out, 6))).zfill(10)
         current_hol = np.array(values)
+
         for i1 in np.ndenumerate(current_hol[0:]):
             elem = (str(round(i1[1], 6))).zfill(10)
             data_out = data_out + ',' + elem
 
-        data_out = data_out[1:]
-        conn.sendall(bytes(data_out, 'utf-8'))
+        print(last_Ps - np.array(P))
+        conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'QUIT' in str(cmnd):
         # Do the quiting action
