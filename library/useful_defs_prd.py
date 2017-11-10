@@ -7,6 +7,7 @@ import glob
 import copy
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy as sp
 import scipy.io as io
 import scipy.optimize as opt
 
@@ -33,10 +34,12 @@ def palette():
                'mdk_blue': [75 / 255, 179 / 255, 232 / 255],
                'mdk_orange': [224 / 255, 134 / 255, 31 / 255],
                'mdk_pink': [180 / 255, 38 / 255, 86 / 255],
+               ####
                'rmp_dblue': [12 / 255, 35 / 255, 218 / 255],
                'rmp_lblue': [46 / 255, 38 / 255, 86 / 255],
                'rmp_pink': [210 / 255, 76 / 255, 197 / 255],
                'rmp_green': [90 / 255, 166 / 255, 60 / 255],
+               ####
                'fibre9l_1': [234 / 255, 170 / 255, 255 / 255],
                'fibre9l_2': [255 / 255, 108 / 255, 134 / 255],
                'fibre9l_3': [255 / 255, 182 / 255, 100 / 255],
@@ -52,7 +55,10 @@ def palette():
                'fibre9d_6': [119 / 255, 125 / 255, 0 / 255],
                'fibre9d_7': [0 / 255, 39 / 255, 139 / 255],
                'fibre9d_8': [0 / 255, 106 / 255, 85 / 255],
-               'fibre9d_9': [53 / 255, 119 / 255, 0 / 255]
+               'fibre9d_9': [53 / 255, 119 / 255, 0 / 255],
+               ####
+               'ggred': [217 / 255, 83 / 255, 25 / 255],
+               'ggblue': [0 / 255, 114 / 255, 189 / 255]
                }
 
     plt.style.use('ggplot')
@@ -93,8 +99,8 @@ def load_multicsv(directory):
 
 
 # Plot an image from a csv ####################################################
-def img_csv(file):
-    im = np.genfromtxt(file, delimiter=',')
+def img_csv(file, delim=',', sk_head=1):
+    im = np.genfromtxt(file, delimiter=delim, skip_header=sk_head)
     im_size = np.shape(im)
     y = np.arange(im_size[0])
     x = np.arange(im_size[1])
@@ -190,6 +196,21 @@ def save_bmp(X, Path):
     img = Image.open(file_in)
     file_out = Path + '.bmp'
     img.save(file_out)
+
+
+# Cross correlating two images, returns the fftconvolution ####################
+def cross_image(im1, im2):
+    # get rid of the color channels by performing a grayscale transform
+    # the type cast into 'float' is to avoid overflows
+    im1_gray = im1.astype('float')
+    im2_gray = im2.astype('float')
+
+    # get rid of the averages, otherwise the results are not good
+    im1_gray -= np.mean(im1_gray)
+    im2_gray -= np.mean(im2_gray)
+
+    # calculate the correlation image; note the flipping of onw of the images
+    return sp.signal.fftconvolve(im1_gray, im2_gray[::-1, ::-1], mode='same')
 
 
 ###############################################################################
@@ -448,6 +469,8 @@ def phase_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off):
 
     # Output all 4
     return Z1
+
+
 def sin_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
     # Generate meshgrid of coordinate points
     x = np.arange(Hol_δx)
@@ -462,6 +485,8 @@ def sin_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off
     return Z2
 
     # Generate holograms with first two parameters to optimise - Λ and φ #####
+
+
 def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
     # Generate meshgrid of coordinate points
     x = np.arange(Hol_δx)
