@@ -16,12 +16,11 @@ from scipy.interpolate import interp1d
 from scipy.ndimage.filters import gaussian_filter
 from PIL import Image
 
+
 ###############################################################################
 # File & plotting defs
 ###############################################################################
 # Modokai pallette for plotting ###############################################
-
-
 def palette():
     colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
                'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
@@ -116,9 +115,8 @@ def img_csv(file, delim=',', sk_head=1):
     coords = (X, Y)
     return (im, coords)
 
-# Plot an image from a labVIEW#################################################
 
-
+# Plot an image from a labVIEW ################################################
 def img_labVIEW(file):
     im = np.loadtxt(file)
     im_size = np.shape(im)
@@ -184,9 +182,7 @@ def img_clean(im):
     x1 = np.arange(0, im_size[1], 10)
 
     X, Y = np.meshgrid(x, y)
-    coords = (X, Y)
     X1, Y1 = np.meshgrid(x1, y1)
-    coords1 = (X1, Y1)
 
     RBS_f = RectBivariateSpline(y, x, im)
     RBS_im = RBS_f(y1, x1)
@@ -272,7 +268,7 @@ def variable_unpack(LabVIEW_data):
 # Generate hologram and save as bmp ###########################################
 def holo_gen(*LabVIEW_data):
     # Unpack parameters
-    cs = palette()
+    # cs = palette()
 
     LCOS_δx = LabVIEW_data[0]
     LCOS_δy = LabVIEW_data[1]
@@ -603,17 +599,19 @@ def remap_phase(Z_mod, g_ϕ):
         Z_mod1[i1, :] = g_ϕ(Z_mod[i1, :])
     return (Z_mod1)
 
+
 # Use binary search algorithm to find beam on the LCOS ########################
 def locate_beam(values, last_CT400, current_CT400, axis):
     # Specify paths of 2 iterators and 1 binary search map
-    i0_p = r'..\..\Data\Python loop\i0.txt'
-    i1_p = r'..\..\Data\Python loop\i1.txt'
-    Map_p = r'..\..\Data\Python loop\Map.txt'
+    i0_p = r'..\..\Data\Python loops\Find beam i0.txt'
+    i1_p = r'..\..\Data\Python loops\Find beam i1.txt'
+    Map_p = r'..\..\Data\Python loops\LCOS Map.txt'
 
     # Load relevant values
     i0 = np.genfromtxt(i0_p, dtype='int')
     i1 = np.genfromtxt(i1_p, dtype='int')
     Map = np.genfromtxt(Map_p, dtype='int', delimiter=',')
+
     # Ensure Map is at least a 1d array
     Map = np.atleast_1d(Map)
 
@@ -631,23 +629,26 @@ def locate_beam(values, last_CT400, current_CT400, axis):
         Hol_c_val = 4
         Hol_d_val = 2
 
-    print('i0 (0/1/2) = ', i0)
-    print(r'i1 (#) = ', i1)
-    print('Map = ', Map)
-
+    # Start search
     start = 0.5
     shift = 0
 
+    # Works on 3 cases i0 == [0,1,2]
+    # i0 determines first level of iteration - i.e. 1st or 2nd half of region
+    # being checked. 0 case is an exception as it's the first reading
     if i0 == 0:
         values[Hol_c_val] = np.round((start - hd / 2) * values[LCOS_d_val])
         values[Hol_d_val] = np.floor((hd) * values[LCOS_d_val])
-        print('Hol centre = ', values[Hol_c_val])
-        print('Hol width = ', values[Hol_d_val])
         f0 = open(i0_p, 'w')
         f0.write(str(i0 + 1))
         f0.close()
 
     elif i0 == 1:
+        # for i0 == 1 the 2nd measurement of the region is performed
+        # i1 determines the region being considered -
+        # i1 = 1 is whole LCOS
+        # i1 = 2 is 1/2 of LCOS
+        # i1 = 3 is 1/4 of LCOS...
         if i1 == 1:
             start = 0.5
         else:
@@ -657,24 +658,18 @@ def locate_beam(values, last_CT400, current_CT400, axis):
 
         values[Hol_c_val] = np.round((start + hd / 2) * values[LCOS_d_val])
         values[Hol_d_val] = np.floor((hd) * values[LCOS_d_val])
-        print('Hol centre = ', values[Hol_c_val])
-        print('Hol width = ', values[Hol_d_val])
-
         f0 = open(i0_p, 'w')
         f0.write(str(i0 + 1))
         f0.close()
 
     elif i0 == 2:
-        print('1st power = ', last_CT400)
-        print('2nd power = ', current_CT400)
-
+        # for i0 == 2 the power readings for the current and last power values
+        # are compared. Depending on outcome the MAP file is duely appended
         if current_CT400 < last_CT400:
             Map = np.atleast_1d(np.append(Map, 0))
 
         elif current_CT400 > last_CT400:
             Map = np.atleast_1d(np.append(Map, 1))
-
-        print('New Map', Map)
 
         np.savetxt(Map_p, Map, fmt='%d', delimiter=',')
         i1 = i1 + 1
@@ -686,9 +681,6 @@ def locate_beam(values, last_CT400, current_CT400, axis):
         values[Hol_c_val] = np.round((start - hd / 2) * values[LCOS_d_val])
         values[Hol_d_val] = np.floor((hd) * values[LCOS_d_val])
 
-        print('Hol centre = ', values[Hol_c_val])
-        print('Hol width = ', values[Hol_d_val])
-
         f0 = open(i0_p, 'w')
         f0.write(str(i0 - 1))
         f0.close()
@@ -697,12 +689,30 @@ def locate_beam(values, last_CT400, current_CT400, axis):
         f1.write(str(i1))
         f1.close()
         print('-----')
+        # Termination statement. Search proceeds whilst i1 <= 8
     if i1 > 8:
         loop_out = 1
-
     else:
         loop_out = 0
     return(loop_out)
+
+
+# Use simulated annealing to optimise hologram
+def anneal_H(values):
+    i0_p = r'..\..\Data\Python loops\Anneal i0.txt'
+    H_an_p = r'..\..\Data\Python loops\Anneal Hol.txt'
+
+    i0 = np.genfromtxt(i0_p, dtype='int')
+
+    if i0 == 0:
+        H_an = np.random.randint(255, size=(100, 100))
+    else:
+        H_an = np.genfromtxt(H_an_p, dtype='int')
+        np.savetxt(H_an_p, H_an)
+        
+    Holo_f = add_holo_LCOS(values[5], values[4], H_an,
+                           values[1], values[0])
+    save_bmp(Holo_f, r"..\..\Data\bmps\hologram")
 
 
 ###############################################################################
