@@ -17,11 +17,6 @@ from scipy.ndimage.filters import gaussian_filter
 from PIL import Image
 
 ###############################################################################
-# Define some functions
-###############################################################################
-
-
-###############################################################################
 # File & plotting defs
 ###############################################################################
 # Modokai pallette for plotting ###############################################
@@ -58,7 +53,18 @@ def palette():
                'fibre9d_9': [53 / 255, 119 / 255, 0 / 255],
                ####
                'ggred': [217 / 255, 83 / 255, 25 / 255],
-               'ggblue': [0 / 255, 114 / 255, 189 / 255]
+               'ggblue': [0 / 255, 114 / 255, 189 / 255],
+               'ggpurple': [145 / 255, 125 / 255, 240 / 255],
+               'ggyellow': [229 / 255, 220 / 255, 90 / 255],
+               'gglred': [237 / 255, 103 / 255, 55 / 255],
+               'gglblue': [20 / 255, 134 / 255, 209 / 255],
+               'gglpurple': [165 / 255, 145 / 255, 255 / 255],
+               'gglyellow': [249 / 255, 240 / 255, 110 / 255],
+               'ggdred': [197 / 255, 63 / 255, 5 / 255],
+               'ggdblue': [0 / 255, 94 / 255, 169 / 255],
+               'ggdpurple': [125 / 255, 105 / 255, 220 / 255],
+               'ggdyellow': [209 / 255, 200 / 255, 70 / 255],
+
                }
 
     plt.style.use('ggplot')
@@ -101,6 +107,18 @@ def load_multicsv(directory):
 # Plot an image from a csv ####################################################
 def img_csv(file, delim=',', sk_head=1):
     im = np.genfromtxt(file, delimiter=delim, skip_header=sk_head)
+    im_size = np.shape(im)
+    y = np.arange(im_size[0])
+    x = np.arange(im_size[1])
+    X, Y = np.meshgrid(x, y)
+    coords = (X, Y)
+    return (im, coords)
+
+# Plot an image from a labVIEW#################################################
+
+
+def img_labVIEW(file):
+    im = np.loadtxt(file)
     im_size = np.shape(im)
     y = np.arange(im_size[0])
     x = np.arange(im_size[1])
@@ -152,19 +170,7 @@ def PPT_save_2d_im(fig, ax, cb, name):
     ax.tick_params(axis='y', colors='xkcd:charcoal grey')
     cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
     plt.setp(cbytick_obj, color='xkcd:charcoal grey')
-
     ax.figure.savefig(name)
-    os.chdir(r"C:\Users\Philip\Documents\Powerpoints\IEEE Yangzhou")
-    cs = palette()
-    fig2 = plt.figure('fig2')
-    ax2 = fig2.add_subplot(1, 1, 1)
-    fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    ax2.set_xlabel('pixel')
-    ax2.set_ylabel('grey value [0:255] axis')
-    plt.plot(x3, phase(x3, *popt), '--', lw=0.5)
-    plt.plot(x0, y_lin, '.', lw=0.5)
-    PPT_save_2d(fig2, ax2, 'python phase phit.png')
-    plt.cla()
 
 
 # Smooth a numpy image array ##################################################
@@ -306,7 +312,7 @@ def holo_gen(*LabVIEW_data):
     Z1 = Zs[1]
     Z2 = Zs[2]
     Z3 = Zs[3]
-
+    print(np.shape(Z1))
     # Remap phase with non linear ϕ map
     H1 = remap_phase(Z1, g_ϕ)
     H3 = remap_phase(Z3, g_ϕ)
@@ -600,31 +606,31 @@ def remap_phase(Z_mod, g_ϕ):
 # Maths defs
 ###############################################################################
 # Generic 1D Gaussian function ################################################
-def Gaussian_1D(x, A, xo, σ_x, bkg):
-    xo = float(xo)
-    g = bkg + A * np.exp(- ((x - xo) ** 2) / (2 * σ_x ** 2))
+def Gaussian_1D(x, A, x_c, σ_x, bkg=0):
+    x_c = float(x_c)
+    g = bkg + A * np.exp(- ((x - x_c) ** 2) / (2 * σ_x ** 2))
     return g
 
 
 # Generic 2D Gaussian function ################################################
-def Gaussian_2D(coords, A, xo, yo, σ_x, σ_y, θ, bkg):
+def Gaussian_2D(coords, A, x_c, y_c, σ_x, σ_y, θ, bkg=0):
     x, y = coords
-    xo = float(xo)
-    yo = float(yo)
+    x_c = float(x_c)
+    y_c = float(y_c)
     a = (np.cos(θ) ** 2) / (2 * σ_x ** 2) + (np.sin(θ) ** 2) / (2 * σ_y ** 2)
     b = -(np.sin(2 * θ)) / (4 * σ_x ** 2) + (np.sin(2 * θ)) / (4 * σ_y ** 2)
     c = (np.sin(θ) ** 2) / (2 * σ_x ** 2) + (np.cos(θ) ** 2) / (2 * σ_y ** 2)
-    g = (bkg + A * np.exp(- (a * ((x - xo) ** 2) +
-                             2 * b * (x - xo) * (y - yo) +
-                             c * ((y - yo) ** 2))))
+    g = (bkg + A * np.exp(- (a * ((x - x_c) ** 2) +
+                             2 * b * (x - x_c) * (y - y_c) +
+                             c * ((y - y_c) ** 2))))
     return g.ravel()
 
 
 # Fit Λ and ϕ datasets from peak finding routine ##############################
-def find_fit_peak(x, y, A, xo):
+def find_fit_peak(x, y, A, x_c):
     x_1 = np.linspace(min(x), max(x), 100)
     Peak_ind = np.unravel_index(y.argmax(), y.shape)
-    initial_guess = (A, x[Peak_ind[0]], xo, 0)
+    initial_guess = (A, x[Peak_ind[0]], x_c, 0)
 
     # Fit data
     try:
@@ -685,3 +691,53 @@ def cart2pol(x, y):
 def max_i_2d(a):
     b = np.unravel_index(a.argmax(), a.shape)
     return(b)
+
+
+###############################################################################
+# ABCD matrix defs
+###############################################################################
+def ABCD_d(q_in, d, n=1):
+    M = np.array([[1, d * n], [0, 1]])
+    q_out = np.matmul(M, q_in)
+    return(q_out)
+
+
+def ABCD_propagate(q0, z_end, z_start=0, res=100, n=1):
+    qz = [q0]
+    zs = np.linspace(z_start, z_end, res)
+    ns = n * np.ones(len(zs))
+    if q0[1] == 1:
+        z_start = np.real(q0[0])
+
+    dz = (z_end - z_start) / res
+
+    for i1, val1 in enumerate(zs[1:]):
+        q1 = ABCD_d(q0, dz)
+        qz.append(q1)
+        q0 = q1
+
+    return(zs, qz, ns)
+
+
+def ABCD_tlens(q_in, f):
+    M = np.array([[1, 0], [-1 / f, 1]])
+    q_out = np.matmul(M, q_in)
+    if q_in[1] == 1:
+        q_out = q_out / q_out[1]
+    return(q_out)
+
+
+def ABCD_plan(q_in, n1, n2):
+    M = np.array([[1, 0], [0, n1 / n2]])
+    q_out = np.matmul(M, q_in)
+    if np.iscomplex(q_in[0])==True:
+        q_out = q_out / q_out[1]
+    return(q_out)
+
+
+def ABCD_curv(q_in, n1, n2, R):
+    M = np.array([[1, 0], [(n1 - n2) / (R * n2), n1 / n2]])
+    q_out = np.matmul(M, q_in)
+    if np.iscomplex(q_in[0])==True:
+        q_out = q_out / q_out[1]
+    return(q_out)
