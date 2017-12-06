@@ -20,6 +20,8 @@ from PIL import Image
 # File & plotting defs
 ###############################################################################
 # Modokai pallette for plotting ###############################################
+
+
 def palette():
     colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
                'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
@@ -594,12 +596,113 @@ def fit_phase():
     return (ϕ_A, ϕ_B, ϕ_g)
 
 
-# Use the fitting results from 'fit_phase'  to remap hologram Z_mod ###########
+# Use the fitting results from 'fit_phase' to remap hologram Z_mod ############
 def remap_phase(Z_mod, g_ϕ):
     Z_mod1 = copy.copy(Z_mod)
     for i1 in range(np.shape(Z_mod)[0]):
         Z_mod1[i1, :] = g_ϕ(Z_mod[i1, :])
     return (Z_mod1)
+
+# Use binary search algorithm to find beam on the LCOS ########################
+def locate_beam(values, last_CT400, current_CT400, axis):
+    # Specify paths of 2 iterators and 1 binary search map
+    i0_p = r'..\..\Data\Python loop\i0.txt'
+    i1_p = r'..\..\Data\Python loop\i1.txt'
+    Map_p = r'..\..\Data\Python loop\Map.txt'
+
+    # Load relevant values
+    i0 = np.genfromtxt(i0_p, dtype='int')
+    i1 = np.genfromtxt(i1_p, dtype='int')
+    Map = np.genfromtxt(Map_p, dtype='int', delimiter=',')
+    # Ensure Map is at least a 1d array
+    Map = np.atleast_1d(Map)
+
+    # Calculate fractional width of hologram (hd)
+    hd = 1 / 2**(i1)
+
+    # Specify axis (x/y)
+    if axis == 0:
+        LCOS_d_val = 1
+        Hol_c_val = 5
+        Hol_d_val = 3
+
+    elif axis == 1:
+        LCOS_d_val = 0
+        Hol_c_val = 4
+        Hol_d_val = 2
+
+    print('i0 (0/1/2) = ', i0)
+    print(r'i1 (#) = ', i1)
+    print('Map = ', Map)
+
+    start = 0.5
+    shift = 0
+
+    if i0 == 0:
+        values[Hol_c_val] = np.round((start - hd / 2) * values[LCOS_d_val])
+        values[Hol_d_val] = np.floor((hd) * values[LCOS_d_val])
+        print('Hol centre = ', values[Hol_c_val])
+        print('Hol width = ', values[Hol_d_val])
+        f0 = open(i0_p, 'w')
+        f0.write(str(i0 + 1))
+        f0.close()
+
+    elif i0 == 1:
+        if i1 == 1:
+            start = 0.5
+        else:
+            for j1 in range(i1 - 1):
+                shift = -(1 / (2**(j1 + 2))) * (-1)**(Map[j1]) + shift
+                start = 0.5 + shift
+
+        values[Hol_c_val] = np.round((start + hd / 2) * values[LCOS_d_val])
+        values[Hol_d_val] = np.floor((hd) * values[LCOS_d_val])
+        print('Hol centre = ', values[Hol_c_val])
+        print('Hol width = ', values[Hol_d_val])
+
+        f0 = open(i0_p, 'w')
+        f0.write(str(i0 + 1))
+        f0.close()
+
+    elif i0 == 2:
+        print('1st power = ', last_CT400)
+        print('2nd power = ', current_CT400)
+
+        if current_CT400 < last_CT400:
+            Map = np.atleast_1d(np.append(Map, 0))
+
+        elif current_CT400 > last_CT400:
+            Map = np.atleast_1d(np.append(Map, 1))
+
+        print('New Map', Map)
+
+        np.savetxt(Map_p, Map, fmt='%d', delimiter=',')
+        i1 = i1 + 1
+        hd = 1 / 2**(i1)
+        for j1 in range(i1 - 1):
+            shift = -(1 / (2**(j1 + 2))) * (-1)**(Map[j1]) + shift
+            start = 0.5 + shift
+
+        values[Hol_c_val] = np.round((start - hd / 2) * values[LCOS_d_val])
+        values[Hol_d_val] = np.floor((hd) * values[LCOS_d_val])
+
+        print('Hol centre = ', values[Hol_c_val])
+        print('Hol width = ', values[Hol_d_val])
+
+        f0 = open(i0_p, 'w')
+        f0.write(str(i0 - 1))
+        f0.close()
+
+        f1 = open(i1_p, 'w')
+        f1.write(str(i1))
+        f1.close()
+        print('-----')
+    if i1 > 8:
+        loop_out = 1
+
+    else:
+        loop_out = 0
+    return(loop_out)
 
 
 ###############################################################################
@@ -730,7 +833,7 @@ def ABCD_tlens(q_in, f):
 def ABCD_plan(q_in, n1, n2):
     M = np.array([[1, 0], [0, n1 / n2]])
     q_out = np.matmul(M, q_in)
-    if np.iscomplex(q_in[0])==True:
+    if np.iscomplex(q_in[0]) == True:
         q_out = q_out / q_out[1]
     return(q_out)
 
@@ -738,6 +841,6 @@ def ABCD_plan(q_in, n1, n2):
 def ABCD_curv(q_in, n1, n2, R):
     M = np.array([[1, 0], [(n1 - n2) / (R * n2), n1 / n2]])
     q_out = np.matmul(M, q_in)
-    if np.iscomplex(q_in[0])==True:
+    if np.iscomplex(q_in[0]) == True:
         q_out = q_out / q_out[1]
     return(q_out)
