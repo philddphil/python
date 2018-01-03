@@ -5,6 +5,7 @@
 import os
 import glob
 import copy
+import random
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
@@ -16,11 +17,14 @@ from scipy.interpolate import interp1d
 from scipy.ndimage.filters import gaussian_filter
 from PIL import Image
 
+np.set_printoptions(suppress=True)
 
 ###############################################################################
 # File & plotting defs
 ###############################################################################
 # Modokai pallette for plotting ###############################################
+
+
 def palette():
     colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
                'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
@@ -307,123 +311,37 @@ def holo_gen(*LabVIEW_data):
     # Calculate sub hologram (Holo_s)
     Zs = holo_tilt(*Holo_params, sin_amp, sin_off)
     Z0 = Zs[0]
-    Z1 = Zs[1]
-    Z2 = Zs[2]
-    Z3 = Zs[3]
-    print(np.shape(Z1))
+    Z0_mod = Zs[1]
+
     # Remap phase with non linear ϕ map
-    H1 = remap_phase(Z1, g_ϕ)
-    H3 = remap_phase(Z3, g_ϕ)
+    H0 = remap_phase(Z0_mod, g_ϕ)
 
     # Use overshooting
-    H1_1 = overshoot_phase(H1, g_OSlw, g_OSup, g_min, g_max)
-    H3_1 = overshoot_phase(H3, g_OSlw, g_OSup, g_min, g_max)
+    H0_os = overshoot_phase(H0, g_OSlw, g_OSup, g_min, g_max)
 
     # Calculate full holograms (Holo_f)
-    # H1_f = add_holo(*Hol_cyx, H1_1, *LCOS_δyx)
-    H3_f = add_holo_LCOS(*Hol_cyx, H3_1, *LCOS_δyx)
-
-    # im2 = plt.figure('im2')
-    # ax2 = im2.add_subplot(1, 1, 1)
-    # im2.patch.set_facecolor(cs['mdk_dgrey'])
-    # ax2.set_xlabel('x axis')
-    # ax2.set_ylabel('y axis')
-    # plt.imshow(H3, cmap='gray', vmin=0, vmax=255)
-    # cb2 = plt.colorbar()
-    # PPT_save_2d_im(im2, ax2, cb2, 'sub hologram1.png')
-    # plt.clf()
-    # Set output holograms (Z_out, Holo_out)
-    Holo_out = H3_f
+    H0_fin = add_holo_LCOS(*Hol_cyx, H0_os, *LCOS_δyx)
 
     # Save output
-    save_bmp(Holo_out, r"..\..\Data\bmps\hologram")
+    save_bmp(H0_fin, r"..\..\Data\bmps\hologram")
 
     # Get phase profile plots and save (use tilt angle of 0 for plotting)
-    Zs_p = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
-    Z0_p = Zs_p[0]
-    Z1_p = Zs_p[1]
-    Z2_p = Zs_p[2]
-    Z3_p = Zs_p[3]
+    Zs_1d = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
+    Z0_1d = Zs_1d[0]
+    Z0_mod_1d = Zs_1d[1]
 
-    z0_p = Z0_p[0:2 * int(Λ), 0]
-    z1_p = Z1_p[0:2 * int(Λ), 0]
-    z2_p = Z2_p[0:2 * int(Λ), 0]
-    z3_p = Z3_p[0:2 * int(Λ), 0]
+    z0_1d = Z0_1d[0:2 * int(Λ), 0]
+    z0_mod_1d = Z0_1d[0:2 * int(Λ), 0]
 
-    H1_p = remap_phase(Z1_p, g_ϕ)
-    H1_1_p = overshoot_phase(H1_p, g_OSlw, g_OSup, g_min, g_max)
-    H3_p = remap_phase(Z3_p, g_ϕ)
-    H3_1_p = overshoot_phase(H3_p, g_OSlw, g_OSup, g_min, g_max)
+    H0_1d = remap_phase(Z0_mod_1d, g_ϕ)
+    H0_1d_os = overshoot_phase(H0_1d, g_OSlw, g_OSup, g_min, g_max)
 
-    h1_p = H1_p[0:2 * int(Λ), int(Λ / 2)]
-    h3_1_p = H3_1_p[0:2 * int(Λ), int(Λ / 2)]
+    h0_1d = H0_1d[0:2 * int(Λ), int(Λ / 2)]
 
-    # fig2 = plt.figure('fig2')
-    # ax2 = fig2.add_subplot(1, 1, 1)
-    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    # ax2.set_xlabel('pixel')
-    # ax2.set_ylabel('grey value [0:255] axis')
-    # plt.plot(h3_1_p, '.--', lw=0.5)
-    # PPT_save_2d(fig2, ax2, 'pixel row grey.png')
-    # plt.cla()
+    np.savetxt('phaseprofile0.csv', z0_1d, delimiter=',')
+    np.savetxt('greyprofile0.csv', h0_1d, delimiter=',')
 
-    # fig2 = plt.figure('fig2')
-    # ax2 = fig2.add_subplot(1, 1, 1)
-    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    # ax2.set_xlabel('pixel')
-    # ax2.set_ylabel('grey value [0:255] axis')
-    # plt.plot(z3_p, '.--', lw=0.5)
-    # PPT_save_2d(fig2, ax2, 'pixel row phase.png')
-    # plt.cla()
-
-    # im2 = plt.figure('im2')
-    # ax2 = im2.add_subplot(1, 1, 1)
-    # im2.patch.set_facecolor(cs['mdk_dgrey'])
-    # ax2.set_xlabel('x axis')
-    # ax2.set_ylabel('y axis')
-    # plt.imshow(H3_1_p, cmap='gray')
-    # cb2 = plt.colorbar()
-    # PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
-    # plt.clf()
-    # h1_p = H1_p[:, int(Λ / 2)]
-    # h3_1_p = H3_1_p[:, int(Λ / 2)]
-
-    # fig2 = plt.figure('fig2')
-    # ax2 = fig2.add_subplot(1, 1, 1)
-    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    # ax2.set_xlabel('pixel')
-    # ax2.set_ylabel('grey value [0:255] axis')
-    # plt.plot(h3_1_p[0:2 * np.round(Λ)], '.--', lw=0.5)
-    # # plt.plot(h1_p, '.--', lw=0.5)
-    # PPT_save_2d(fig2, ax2, 'pixel row grey.png')
-    # plt.cla()
-
-    # fig2 = plt.figure('fig2')
-    # ax2 = fig2.add_subplot(1, 1, 1)
-    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    # ax2.set_xlabel('pixel')
-    # ax2.set_ylabel('grey value [0:255] axis')
-    # plt.plot(z1_p, '.--', lw=0.5)
-    # plt.plot(z3_p, '.--', lw=0.5)
-    # plt.plot(z2_p, '.--', lw=0.5)
-    # PPT_save_2d(fig2, ax2, 'pixel row phase.png')
-    # plt.cla()
-
-    # im2 = plt.figure('im2')
-    # ax2 = im2.add_subplot(1, 1, 1)
-    # im2.patch.set_facecolor(cs['mdk_dgrey'])
-    # ax2.set_xlabel('x axis')
-    # ax2.set_ylabel('y axis')
-    # plt.imshow(H3_1_p, cmap='gray')
-    # cb2 = plt.colorbar()
-    # PPT_save_2d_im(im2, ax2, cb2, 'sub hologram.png')
-    # plt.clf()
-
-    np.savetxt('phaseprofile0.csv', z1_p, delimiter=',')
-    np.savetxt('greyprofile0.csv', h1_p, delimiter=',')
-    np.savetxt('phaseprofile3.csv', z3_p, delimiter=',')
-    np.savetxt('greyprofile3.csv', h3_1_p, delimiter=',')
-    return [Z1_p, Z2_p, H1_1_p, H3_1_p, H1_1, H3_1]
+    return [H0_os]
 
 
 # Generate 'phase mapping image' for LabVIEW FP ###############################
@@ -521,7 +439,7 @@ def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_of
     Z2_mod = Z2_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z2_mod)) + ϕ_lwlim
 
     # Output all 4
-    Holo_s = (Z1, Z1_mod, Z2, Z2_mod)
+    Holo_s = (Z2, Z2_mod)
     return Holo_s
 
 
@@ -662,9 +580,12 @@ def locate_beam(values, last_CT400, current_CT400, axis):
         f0.write(str(i0 + 1))
         f0.close()
 
+    # for i0 == 2 the power readings for the current and last power values
+    # are compared. Depending on outcome the MAP file is duely appended
     elif i0 == 2:
-        # for i0 == 2 the power readings for the current and last power values
-        # are compared. Depending on outcome the MAP file is duely appended
+
+        # Compare the current power with the last power and save outcome
+        # to 'Map'
         if current_CT400 < last_CT400:
             Map = np.atleast_1d(np.append(Map, 0))
 
@@ -674,6 +595,8 @@ def locate_beam(values, last_CT400, current_CT400, axis):
         np.savetxt(Map_p, Map, fmt='%d', delimiter=',')
         i1 = i1 + 1
         hd = 1 / 2**(i1)
+
+        # Prepare the next hologram to be shown
         for j1 in range(i1 - 1):
             shift = -(1 / (2**(j1 + 2))) * (-1)**(Map[j1]) + shift
             start = 0.5 + shift
@@ -688,7 +611,7 @@ def locate_beam(values, last_CT400, current_CT400, axis):
         f1 = open(i1_p, 'w')
         f1.write(str(i1))
         f1.close()
-        print('-----')
+
         # Termination statement. Search proceeds whilst i1 <= 8
     if i1 > 8:
         loop_out = 1
@@ -697,22 +620,254 @@ def locate_beam(values, last_CT400, current_CT400, axis):
     return(loop_out)
 
 
-# Use simulated annealing to optimise hologram
-def anneal_H(values):
+# Use simulated annealing to optimise hologram ###############################
+def anneal_H1(values, Ps_last, Ps_current):
     i0_p = r'..\..\Data\Python loops\Anneal i0.txt'
+    MF_p = r'..\..\Data\Python loops\Anneal MF.txt'
+    XT_p = r'..\..\Data\Python loops\Anneal XT.txt'
+    IL_p = r'..\..\Data\Python loops\Anneal IL.txt'
     H_an_p = r'..\..\Data\Python loops\Anneal Hol.txt'
+    H_an_pL = r'..\..\Data\Python loops\Anneal Hol Last.txt'
 
+    MF_last = merit(Ps_last)
+    MF_current = merit(Ps_current)
+    print('Ps last = ', Ps_last)
+    print('Ps current = ', Ps_current)
     i0 = np.genfromtxt(i0_p, dtype='int')
-
+    print(i0)
     if i0 == 0:
         H_an = np.random.randint(255, size=(100, 100))
-    else:
-        H_an = np.genfromtxt(H_an_p, dtype='int')
+        np.savetxt(H_an_pL, H_an)
+        print('Save 1st Holo')
+    elif i0 == 1:
+        H_an = np.random.randint(255, size=(100, 100))
         np.savetxt(H_an_p, H_an)
-        
+        print('Save 2nd Holo')
+        data_str = str(MF_current)
+        f1 = open(MF_p, 'a')
+        f1.write(data_str)
+        f1.close()
+    else:
+        random_x = np.random.choice(int(values[2]))
+        random_y = np.random.choice(int(values[3]))
+        # Compare last and current MFs
+        if MF_current > MF_last:
+            H_an = np.genfromtxt(H_an_p, dtype='int')
+            np.savetxt(H_an_pL, H_an)
+            H_an[random_x, random_y] = np.random.randint(0, 255)
+            np.savetxt(H_an_p, H_an)
+        else:
+            H_an = np.genfromtxt(H_an_pL, dtype='int')
+            H_an[random_x, random_y] = np.random.randint(0, 255)
+            np.savetxt(H_an_p, H_an)
+            MF_str = ',' + str(MF_current)
+            f1 = open(MF_p, 'a')
+            f1.write(MF_str)
+            f1.close()
+            XT_str = ',' + str(Ps_current[0] - Ps_current[1])
+            f2 = open(XT_p, 'a')
+            f2.write(XT_str)
+            f2.close()
+            IL_str = ',' + str(Ps_current[0])
+            f3 = open(IL_p, 'a')
+            f3.write(IL_str)
+            f3.close()
+
     Holo_f = add_holo_LCOS(values[5], values[4], H_an,
                            values[1], values[0])
     save_bmp(Holo_f, r"..\..\Data\bmps\hologram")
+    i0 = i0 + 1
+    f0 = open(i0_p, 'w')
+    f0.write(str(i0))
+    f0.close()
+
+    # Termination statement. Search proceeds whilst i1 <= 8
+    if MF_current > -6:
+        loop_out = 1
+    else:
+        loop_out = 0
+    return(loop_out)
+
+
+# Use simulated annealing to optimise hologram ###############################
+def anneal_H2(values, Ps_last, Ps_current, H_in):
+    i0_p = r'..\..\Data\Python loops\Anneal i0.txt'
+    MF_p = r'..\..\Data\Python loops\Anneal MF.txt'
+    XT_p = r'..\..\Data\Python loops\Anneal XT.txt'
+    IL_p = r'..\..\Data\Python loops\Anneal IL.txt'
+    H_an_p = r'..\..\Data\Python loops\Anneal Hol.txt'
+    H_an_pL = r'..\..\Data\Python loops\Anneal Hol Last.txt'
+    MF_last = merit(Ps_last)
+    MF_current = merit(Ps_current)
+    i0 = np.genfromtxt(i0_p, dtype='int')
+    print(i0)
+    if i0 == 0:
+        H_an = H_in
+        np.savetxt(H_an_pL, H_an)
+        print('Save 1st Holo')
+    elif i0 == 1:
+        H_an = H_in
+        np.savetxt(H_an_p, H_an)
+        print('Save 2nd Holo')
+        data_str = str(MF_current)
+        f1 = open(MF_p, 'a')
+        f1.write(data_str)
+        f1.close()
+    else:
+        random_x = np.random.choice(int(values[2]))
+        random_y = np.random.choice(int(values[3]))
+        # Compare last and current MFs
+        if MF_current > MF_last:
+            H_an = np.genfromtxt(H_an_p, dtype='int')
+            np.savetxt(H_an_pL, H_an)
+            H_an[random_x, random_y] = np.random.randint(0, 255)
+            np.savetxt(H_an_p, H_an)
+            print('∆MF ++++++++ Change')
+        else:
+            H_an = np.genfromtxt(H_an_pL, dtype='int')
+            H_an[random_x, random_y] = np.random.randint(0, 255)
+            np.savetxt(H_an_p, H_an)
+            MF_str = ',' + str(MF_current)
+            f1 = open(MF_p, 'a')
+            f1.write(MF_str)
+            f1.close()
+            XT_str = ',' + str(Ps_current[0] - Ps_current[1])
+            f2 = open(XT_p, 'a')
+            f2.write(XT_str)
+            f2.close()
+            IL_str = ',' + str(Ps_current[0])
+            f3 = open(IL_p, 'a')
+            f3.write(IL_str)
+            f3.close()
+            print('∆MF ------- Dont Change')
+
+    Holo_f = add_holo_LCOS(values[5], values[4], H_an,
+                           values[1], values[0])
+    save_bmp(Holo_f, r"..\..\Data\bmps\hologram")
+    i0 = i0 + 1
+    f0 = open(i0_p, 'w')
+    f0.write(str(i0))
+    f0.close()
+
+    # Termination statement. Search proceeds whilst i1 <= 8
+    if MF_current > -6:
+        loop_out = 1
+    else:
+        loop_out = 0
+    return(loop_out)
+
+
+# Use simulated annealing to optimise hologram ###############################
+def anneal_H3(values, Ps_current, variables):
+    i0_p = r'..\..\Data\Python loops\Anneal i0.txt'
+    MF_p = r'..\..\Data\Python loops\Anneal MF.txt'
+    MFk_p = r'..\..\Data\Python loops\Anneal MF keep.txt'
+    XT_p = r'..\..\Data\Python loops\Anneal XT.txt'
+    IL_p = r'..\..\Data\Python loops\Anneal IL.txt'
+    H_an_p = r'..\..\Data\Python loops\Anneal Hol params.txt'
+    H_an_pk = r'..\..\Data\Python loops\Anneal Hol params keep.txt'
+    MFk = np.genfromtxt(MFk_p)
+    MF_current = merit(Ps_current)
+    i0 = np.genfromtxt(i0_p, dtype='int')
+
+    print(i0)
+
+    ϕ_lwlim_rng = (values[6], min(values[7], values[8] + 0.1))
+    ϕ_uplim_rng = (values[9] - 0.1, min(values[7], values[9] + 0.1))
+    g_OSlw_rng = (values[12], values[12] + 1)
+    g_OSup_rng = (values[13] - 1, values[13])
+    g_min_rng = (0, values[10])
+    g_max_rng = (values[11], 255)
+    Λ_rng = (values[14] - 0.1, values[14] + 0.1)
+    φ_rng = (values[15] - 0.2, values[15] + 0.2)
+    offset_rng = (0, values[14])
+    sin_amp_rng = (0, 0.2)
+    sin_off_rng = (0, values[14])
+
+    params_to_vary = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    rngs_to_vary = [ϕ_lwlim_rng, ϕ_uplim_rng, g_OSlw_rng, g_OSup_rng,
+                    g_min_rng, g_max_rng, Λ_rng, φ_rng, offset_rng,
+                    sin_amp_rng, sin_off_rng]
+
+    if i0 == 0:
+        np.savetxt(H_an_pk, values, delimiter=",",
+                   header='see code structure for variable names')
+        random_param = random.choice(range(len(params_to_vary)))
+        param_to_vary = params_to_vary[random_param]
+        rng_to_vary = rngs_to_vary[random_param]
+        new_value = np.random.uniform(rng_to_vary[0], rng_to_vary[1])
+        values[param_to_vary] = new_value
+        print(values)
+        print('Param changed is', variables[param_to_vary])
+        print('New value is', new_value)
+        np.savetxt(H_an_p, values, delimiter=",",
+                   header='see code structure for variable names')
+        f0 = open(MFk_p, 'w')
+        f0.write(str(MF_current))
+        f0.close()
+        holo_gen(*values)
+    else:
+        vs_keep = np.genfromtxt(H_an_pk, delimiter=',')
+        vs_current = np.genfromtxt(H_an_p, delimiter=',')
+
+        random_param = random.choice(range(len(params_to_vary)))
+        param_to_vary = params_to_vary[random_param]
+        rng_to_vary = rngs_to_vary[random_param]
+        new_value = np.random.uniform(rng_to_vary[0], rng_to_vary[1])
+        print('Kept-', MFk, ' / ', 'Current-', MF_current)
+        # Compare last and current MFs
+
+        if MF_current > MFk:
+            vs_current[param_to_vary] = new_value
+            print('Param changed is', variables[param_to_vary])
+            print('New value is', new_value)
+            np.savetxt(H_an_pk, vs_current, delimiter=",",
+                       header='see code structure for variable names')
+            new_values = vs_current
+            f0 = open(MFk_p, 'w')
+            f0.write(str(MF_current))
+            f0.close()
+            MF_str = ',' + str(MF_current)
+            f1 = open(MF_p, 'a')
+            f1.write(MF_str)
+            f1.close()
+            XT_str = ',' + str(Ps_current[0] - Ps_current[1])
+            f2 = open(XT_p, 'a')
+            f2.write(XT_str)
+            f2.close()
+            IL_str = ',' + str(Ps_current[0])
+            f3 = open(IL_p, 'a')
+            f3.write(IL_str)
+            f3.close()
+            print('∆MF ++++++++ Change (Current > Kept)')
+        else:
+            vs_keep[param_to_vary] = new_value
+            new_values = vs_keep
+
+        np.savetxt(H_an_p, new_values, delimiter=",",
+                   header='see code structure for variable names')
+
+        holo_gen(*new_values)
+    i0 = i0 + 1
+    f0 = open(i0_p, 'w')
+    f0.write(str(i0))
+    f0.close()
+
+    # Termination statement. Search proceeds whilst i1 <= 8
+    if MF_current > -6:
+        loop_out = 1
+    else:
+        loop_out = 0
+    return(loop_out)
+# Basic merit function (to be developed) #####################################
+
+
+def merit(Ps):
+
+    IL = Ps[0]
+    XT = Ps[0] - Ps[1]
+    MF = IL - (55 - XT)
+    return MF
 
 
 ###############################################################################
