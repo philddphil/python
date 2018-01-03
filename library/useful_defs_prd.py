@@ -19,12 +19,11 @@ from PIL import Image
 
 np.set_printoptions(suppress=True)
 
+
 ###############################################################################
 # File & plotting defs
 ###############################################################################
 # Modokai pallette for plotting ###############################################
-
-
 def palette():
     colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
                'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
@@ -881,7 +880,7 @@ def Gaussian_1D(x, A, x_c, σ_x, bkg=0):
 
 
 # Generic 2D Gaussian function ################################################
-def Gaussian_2D(coords, A, x_c, y_c, σ_x, σ_y, θ, bkg=0):
+def Gaussian_2D(coords, A, x_c, y_c, σ_x, σ_y, θ=0, bkg=0):
     x, y = coords
     x_c = float(x_c)
     y_c = float(y_c)
@@ -961,9 +960,25 @@ def max_i_2d(a):
     return(b)
 
 
+# Circle at location x, y radius r ############################################
+def circle(r, x, y):
+    # theta goes from 0 to 2pi
+    theta = np.linspace(0, 2 * np.pi, 100)
+
+    # compute xc and yc
+    xc = r * np.cos(theta) + x
+    yc = r * np.sin(theta) + y
+    return (xc, yc)
+
+
+# def hexpack(n):
+#     for i1 in 6*
+
 ###############################################################################
 # ABCD matrix defs
 ###############################################################################
+
+
 def ABCD_d(q_in, d, n=1):
     M = np.array([[1, d * n], [0, 1]])
     q_out = np.matmul(M, q_in)

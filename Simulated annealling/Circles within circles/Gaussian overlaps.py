@@ -39,23 +39,57 @@ cs = prd.palette()
 ##############################################################################
 # read in image files from path p1
 res = 1000
-R = 10
-F = 12
+R = 3
+F = 8
+r1 = 2
+r2 = 2 * np.sqrt(3)
+r3 = 4
+r4 = 3 * np.sqrt(3)
+π = np.pi
+n = 3
+# first 13 Hex coordinates ###################################################
+Hex_coords_2 = [(0, 0)]
+for i1 in range(6 * n):
+    a0 = i1 + 1
+    a1 = int(np.ceil((i1 + 1) / 6))
+    a2 = i1 % 6
+    print(a1)
+    if a1 % 2 == 1:
+        ϕ = a2 * π / 3
+        r = a1 + 1
+    else:
+        ϕ = a2 * π / 3 + π / 6
+        r = a1 * np.sqrt(3)
+    Hex_coords_2.append((r, ϕ))
+
+
+Hex_coords = [(0, 0),
+              (r1, 0), (r1, π / 3), (r1, 2 * π / 3),
+              (r1, π), (r1, 4 * π / 3), (r1, 5 * π / 3),
+              (r2, π / 6), (r2, π / 6 + π / 3), (r2, π / 6 + 2 * π / 3),
+              (r2, π / 6 + π), (r2, π / 6 + 4 * π / 3), (r2, π / 6 + 5 * π / 3),
+              (r3, 0), (r3, π / 3), (r3, 2 * π / 3),
+              (r3, π), (r3, 4 * π / 3), (r3, 5 * π / 3),
+              (r4, π / 6), (r4, π / 6 + π / 3), (r4, π / 6 + 2 * π / 3),
+              (r4, π / 6 + π), (r4, π / 6 + 4 * π / 3), (r4, π / 6 + 5 * π / 3)]
+
 x = np.linspace(-F, F, res)
 y = np.linspace(-F, F, res)
 coords = np.meshgrid(x, y)
+G = np.zeros((res, res))
 
-g0 = prd.Gaussian_2D(coords, 1, 0, 5, 1, 1)
-g1 = g0.reshape(res, res)
+for i1, val in enumerate(Hex_coords_2):
+    x_c = val[0] * np.cos(val[1])
+    y_c = val[0] * np.sin(val[1])
+    g0 = prd.Gaussian_2D(coords, 1, x_c, y_c, 0.3, 0.3)
+    g1 = g0.reshape(res, res)
 
-g0 = prd.Gaussian_2D(coords, 1, 0, -5, 1, 1)
-g2 = g0.reshape(res, res)
+    G = G + g1
+# Overlap integral of two Gaussians, g1 g2 ###################################
 
-G = g1 + g2
-
-η1 = sp.trapz(sp.trapz((g1 * g2), y), x)**2
-η2 = sp.trapz(sp.trapz(g1**2, y), x) * sp.trapz(sp.trapz(g2**2, y), x)
-print(η1 / η2)
+# η1 = sp.trapz(sp.trapz((g1 * g2), y), x)**2
+# η2 = sp.trapz(sp.trapz(g1**2, y), x) * sp.trapz(sp.trapz(g2**2, y), x)
+# print(η1 / η2)
 
 
 (xc, yc) = prd.circle(R, 0, 0)
@@ -93,8 +127,8 @@ ax1.set_xlabel('x axis')
 ax1.set_ylabel('y axis')
 ax1.set_aspect(1)
 
-# plt.imshow(G, extent=(x[0], x[-1], y[0], y[-1]), origin='lower')
-surffit = ax1.contour(*coords, G, 5	, cmap=cm.jet)
+plt.imshow(G, extent=(x[0], x[-1], y[0], y[-1]), origin='lower')
+# surffit = ax1.contour(*coords, G, 5   , cmap=cm.jet)
 
 plt.plot(xc, yc)
 
