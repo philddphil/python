@@ -38,62 +38,28 @@ cs = prd.palette()
 # Do some stuff
 ##############################################################################
 # read in image files from path p1
-res = 1000
-R = 3
-F = 8
-r1 = 2
-r2 = 2 * np.sqrt(3)
-r3 = 4
-r4 = 3 * np.sqrt(3)
-π = np.pi
-n = 5
-# first 13 Hex coordinates ###################################################
-Hex_coords_2 = [(0, 0)]
-for i1 in range(6 * n):
-    a0 = i1 + 1
-    a1 = int(np.ceil((i1 + 1) / 6))
-    a2 = i1 % 6
+δ = 4
+pad = 2
 
-    if a1 % 2 == 1:
-        ϕ = a2 * π / 3
-        r = a1 + 1
-    else:
-        ϕ = a2 * π / 3 + π / 6
-        r = (1 + a1 / 2) * np.sqrt(3)
-        print(a1)
-    Hex_coords_2.append((r, ϕ))
+D0 = np.ones((δ, δ))
+
+D1 = np.zeros(((2 * pad + 1) * (δ), (2 * pad + 1) * (δ)))
+
+D2 = D1
+x = np.shape(D2)[0]
+y = np.shape(D2)[1]
+fig1 = plt.figure('fig1')
+fig1.patch.set_facecolor(cs['mdk_dgrey'])
+for i1 in range(x):
+    for i2 in range(y):
+        if (i1 - pad) % (2 * pad + 1) == 0 and (i2 - pad) % (2 * pad + 1) == 0:
+            print((i1 - pad) // (2 * pad + 1), (i2 - pad) // (2 * pad + 1))
+            plt.plot(i1, i2, '.', c=cs['ggred'])
+        else:
+            plt.plot(i1, i2, '.', c=cs['ggblue'])
 
 
-Hex_coords = [(0, 0),
-              (r1, 0), (r1, π / 3), (r1, 2 * π / 3),
-              (r1, π), (r1, 4 * π / 3), (r1, 5 * π / 3),
-              (r2, π / 6), (r2, π / 6 + π / 3), (r2, π / 6 + 2 * π / 3),
-              (r2, π / 6 + π), (r2, π / 6 + 4 * π / 3), (r2, π / 6 + 5 * π / 3),
-              (r3, 0), (r3, π / 3), (r3, 2 * π / 3),
-              (r3, π), (r3, 4 * π / 3), (r3, 5 * π / 3),
-              (r4, π / 6), (r4, π / 6 + π / 3), (r4, π / 6 + 2 * π / 3),
-              (r4, π / 6 + π), (r4, π / 6 + 4 * π / 3), (r4, π / 6 + 5 * π / 3)]
-
-x = np.linspace(-F, F, res)
-y = np.linspace(-F, F, res)
-coords = np.meshgrid(x, y)
-G = np.zeros((res, res))
-
-for i1, val in enumerate(Hex_coords_2):
-    x_c = val[0] * np.cos(val[1])
-    y_c = val[0] * np.sin(val[1])
-    g0 = prd.Gaussian_2D(coords, 1, x_c, y_c, 0.3, 0.3)
-    g1 = g0.reshape(res, res)
-
-    G = G + g1
-# Overlap integral of two Gaussians, g1 g2 ###################################
-
-# η1 = sp.trapz(sp.trapz((g1 * g2), y), x)**2
-# η2 = sp.trapz(sp.trapz(g1**2, y), x) * sp.trapz(sp.trapz(g2**2, y), x)
-# print(η1 / η2)
-
-
-(xc, yc) = prd.circle(R, 0, 0)
+plt.show()
 
 
 ##############################################################################
@@ -121,17 +87,17 @@ for i1, val in enumerate(Hex_coords_2):
 # wire0 = ax0.plot_wireframe(X[:, 0:a], Y[:, 0:a], Z1[
 #     :, 0:a], color=cs['mdk_dgrey'], lw=0.5, alpha=1)
 
-fig1 = plt.figure('fig1')
-ax1 = fig1.add_subplot(1, 1, 1)
-fig1.patch.set_facecolor(cs['mdk_dgrey'])
-ax1.set_xlabel('x axis')
-ax1.set_ylabel('y axis')
-ax1.set_aspect(1)
+# fig1 = plt.figure('fig1')
+# ax1 = fig1.add_subplot(1, 1, 1)
+# fig1.patch.set_facecolor(cs['mdk_dgrey'])
+# ax1.set_xlabel('x axis')
+# ax1.set_ylabel('y axis')
+# ax1.set_aspect(1)
 
-plt.imshow(G, extent=(x[0], x[-1], y[0], y[-1]), origin='lower')
-# surffit = ax1.contour(*coords, G, 5   , cmap=cm.jet)
+# # plt.imshow(G, extent=(x[0], x[-1], y[0], y[-1]), origin='lower')
+# surffit = ax1.contour(*coords, G, 5	, cmap=cm.jet)
 
-plt.plot(xc, yc)
+# plt.plot(xc, yc)
 
 # im3 = plt.figure('im3')
 # ax3 = im3.add_subplot(1, 1, 1)

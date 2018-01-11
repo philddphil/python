@@ -80,7 +80,7 @@ def palette():
     plt.rcParams['xtick.labelsize'] = 8
     plt.rcParams['ytick.labelsize'] = 8
     plt.rcParams['legend.fontsize'] = 10
-    plt.rcParams['figure.titlesize'] = 10
+    plt.rcParams['figure.titlesize'] = 8
     plt.rcParams['lines.color'] = 'white'
     plt.rcParams['text.color'] = colours['mdk_purple']
     plt.rcParams['axes.labelcolor'] = colours['mdk_yellow']
@@ -92,6 +92,7 @@ def palette():
     plt.rcParams['savefig.facecolor'] = colours['mdk_dgrey']
     plt.rcParams['grid.color'] = colours['mdk_lgrey']
     plt.rcParams['grid.linestyle'] = ':'
+    plt.rcParams['axes.titlepad'] = 6
 
     return colours
 
@@ -373,10 +374,10 @@ def phase_plot(*LabVIEW_data):
 
 
 # Generate holograms with first two parameters to optimise - Λ and φ ##########
-def phase_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off):
+def phase_tilt(Λ, φ, H_δy=50, H_δx=50, ϕ_lwlim=0, ϕ_uplim=2 * np.pi, off=0):
     # Generate meshgrid of coordinate points
-    x = np.arange(Hol_δx)
-    y = np.arange(Hol_δy)
+    x = np.arange(H_δx)
+    y = np.arange(H_δy)
     [X, Y] = np.meshgrid(x, y)
 
     # Calculate phase tilt angle from periodicity and usable phase range
@@ -408,7 +409,8 @@ def sin_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off
     # Generate holograms with first two parameters to optimise - Λ and φ #####
 
 
-def holo_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
+def holo_tilt(Λ, φ, Hol_δy=50, Hol_δx=50, ϕ_lwlim=0, ϕ_uplim=np.pi * 2, off=0,
+              sin_amp=0, sin_off=0):
     # Generate meshgrid of coordinate points
     x = np.arange(Hol_δx)
     y = np.arange(Hol_δy)
@@ -858,9 +860,9 @@ def anneal_H3(values, Ps_current, variables):
     else:
         loop_out = 0
     return(loop_out)
+
+
 # Basic merit function (to be developed) #####################################
-
-
 def merit(Ps):
 
     IL = Ps[0]
@@ -873,14 +875,14 @@ def merit(Ps):
 # Maths defs
 ###############################################################################
 # Generic 1D Gaussian function ################################################
-def Gaussian_1D(x, A, x_c, σ_x, bkg=0):
+def Gaussian_1D(x, A, x_c, σ_x, bkg=0, N=1):
     x_c = float(x_c)
-    g = bkg + A * np.exp(- ((x - x_c) ** 2) / (2 * σ_x ** 2))
+    g = bkg + A * np.exp(- (((x - x_c) ** 2) / (2 * σ_x ** 2))**N)
     return g
 
 
 # Generic 2D Gaussian function ################################################
-def Gaussian_2D(coords, A, x_c, y_c, σ_x, σ_y, θ=0, bkg=0):
+def Gaussian_2D(coords, A, x_c, y_c, σ_x, σ_y, θ=0, bkg=0, N=1):
     x, y = coords
     x_c = float(x_c)
     y_c = float(y_c)
@@ -889,7 +891,7 @@ def Gaussian_2D(coords, A, x_c, y_c, σ_x, σ_y, θ=0, bkg=0):
     c = (np.sin(θ) ** 2) / (2 * σ_x ** 2) + (np.cos(θ) ** 2) / (2 * σ_y ** 2)
     g = (bkg + A * np.exp(- (a * ((x - x_c) ** 2) +
                              2 * b * (x - x_c) * (y - y_c) +
-                             c * ((y - y_c) ** 2))))
+                             c * ((y - y_c) ** 2))**N))
     return g.ravel()
 
 
@@ -926,10 +928,10 @@ def running_mean(x, N):
 
 
 # Gaussian blur an image n times ##############################################
-def n_G_blurs(im, n):
+def n_G_blurs(im, n, s=3):
     im_out = im
     for i1 in range(n):
-        im_out = gaussian_filter(im_out, 20)
+        im_out = gaussian_filter(im_out, s)
 
     return im_out
 
@@ -971,14 +973,31 @@ def circle(r, x, y):
     return (xc, yc)
 
 
-# def hexpack(n):
-#     for i1 in 6*
+# Mode overlap for 2 fields G1 G2 in field with x & y axis
+def Overlap(x, y, G1, G2):
+    η1 = sp.trapz(sp.trapz((G1 * G2), y), x)**2
+    η2 = sp.trapz(sp.trapz(G1**2, y), x) * sp.trapz(sp.trapz(G2**2, y), x)
+    η = η1 / η2
+    return η
+
+
+# Pad an array A with n elements all of value a
+def Pad_A_elements(A, n, a=0):
+    Ax, Ay = np.shape(A)
+    P = a * np.ones(((2 * n + 1) * (Ax), (2 * n + 1) * (Ay)))
+    Px, Py = np.shape(P)
+    for i1 in range(Px):
+        for i2 in range(Py):
+            if ((i1 - n) % (2 * n + 1) == 0 and
+                    (i2 - n) % (2 * n + 1) == 0):
+                P[i1, i2] = A[(i1 - n) // (2 * n + 1),
+                              (i2 - n) // (2 * n + 1)]
+    return P
+
 
 ###############################################################################
 # ABCD matrix defs
 ###############################################################################
-
-
 def ABCD_d(q_in, d, n=1):
     M = np.array([[1, d * n], [0, 1]])
     q_out = np.matmul(M, q_in)
