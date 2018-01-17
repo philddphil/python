@@ -38,8 +38,8 @@ cs = prd.palette()
 # Do some stuff
 ##############################################################################
 # read in image files from path p1
-δ = 4
-pad = 2
+δ = 2
+pad = 3
 
 D0 = np.ones((δ, δ))
 
@@ -50,17 +50,31 @@ x = np.shape(D2)[0]
 y = np.shape(D2)[1]
 fig1 = plt.figure('fig1')
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
+ax1 = fig1.add_subplot(1, 1, 1)
+ax1.set_xlabel('x axis')
+ax1.set_ylabel('y axis')
 for i1 in range(x):
     for i2 in range(y):
         if (i1 - pad) % (2 * pad + 1) == 0 and (i2 - pad) % (2 * pad + 1) == 0:
             print((i1 - pad) // (2 * pad + 1), (i2 - pad) // (2 * pad + 1))
-            plt.plot(i1, i2, '.', c=cs['ggred'])
+            plt.plot(i1, i2, 'o', c=cs['ggred'])
         else:
-            plt.plot(i1, i2, '.', c=cs['ggblue'])
+            plt.plot(i1, i2, 's', c=cs['ggblue'])
 
+D3 = prd.Pad_A_elements(D0, pad)
+
+
+fig2 = plt.figure('fig2')
+fig2.patch.set_facecolor(cs['mdk_dgrey'])
+ax2 = fig2.add_subplot(1, 1, 1)
+plt.imshow(D3)
+ax2.set_xlabel('x axis')
+ax2.set_ylabel('y axis')
 
 plt.show()
 
+prd.PPT_save_2d(fig1, ax1, 'plot.png')
+prd.PPT_save_2d(fig2, ax2, 'img.png')
 
 ##############################################################################
 # Plot some figures

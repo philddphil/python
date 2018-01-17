@@ -443,6 +443,9 @@ def holo_tilt(Λ, φ, Hol_δy=50, Hol_δx=50, ϕ_lwlim=0, ϕ_uplim=np.pi * 2, of
     Holo_s = (Z2, Z2_mod)
     return Holo_s
 
+# Calculate replay field for hologram H ##########
+def holo_replay(H):
+
 
 # Add sub hologram Z_mod to larger hologram (initially set to 0s) #############
 def add_holo_LCOS(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
