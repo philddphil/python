@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import csv
 import scipy.optimize as opt
 import socket
-import scipy as sp
 import scipy.io as io
 import importlib.util
 import ntpath
@@ -39,33 +38,28 @@ cs = prd.palette()
 # Do some stuff
 ##############################################################################
 # read in image files from path p1
-<<<<<<< HEAD
-x = np.linspace(-1, 4, 500)
-t = np.linspace(0, 499, 500)
-=======
-res = 1000
-R = 10
-F = 12
-x = np.linspace(-F, F, res)
-y = np.linspace(-F, F, res)
-coords = np.meshgrid(x, y)
+δ = 4
+pad = 2
 
-g0 = prd.Gaussian_2D(coords, 1, 0, 5, 1, 1)
-g1 = g0.reshape(res, res)
+D0 = np.ones((δ, δ))
 
-g0 = prd.Gaussian_2D(coords, 1, 0, -5, 1, 1)
-g2 = g0.reshape(res, res)
+D1 = np.zeros(((2 * pad + 1) * (δ), (2 * pad + 1) * (δ)))
 
-G = g1 + g2
+D2 = D1
+x = np.shape(D2)[0]
+y = np.shape(D2)[1]
+fig1 = plt.figure('fig1')
+fig1.patch.set_facecolor(cs['mdk_dgrey'])
+for i1 in range(x):
+    for i2 in range(y):
+        if (i1 - pad) % (2 * pad + 1) == 0 and (i2 - pad) % (2 * pad + 1) == 0:
+            print((i1 - pad) // (2 * pad + 1), (i2 - pad) // (2 * pad + 1))
+            plt.plot(i1, i2, '.', c=cs['ggred'])
+        else:
+            plt.plot(i1, i2, '.', c=cs['ggblue'])
 
-η1 = sp.trapz(sp.trapz((g1 * g2), y), x)**2
-η2 = sp.trapz(sp.trapz(g1**2, y), x) * sp.trapz(sp.trapz(g2**2, y), x)
-print(η1 / η2)
->>>>>>> 364446309de5edc8cc868af64eff55c37b380735
 
-y = (1 - sp.special.erf(x)) / 2
-
-(xc, yc) = prd.circle(R, 0, 0)
+plt.show()
 
 
 ##############################################################################
@@ -93,21 +87,17 @@ y = (1 - sp.special.erf(x)) / 2
 # wire0 = ax0.plot_wireframe(X[:, 0:a], Y[:, 0:a], Z1[
 #     :, 0:a], color=cs['mdk_dgrey'], lw=0.5, alpha=1)
 
-fig1 = plt.figure('fig1')
-ax1 = fig1.add_subplot(1, 1, 1)
-fig1.patch.set_facecolor(cs['mdk_dgrey'])
-ax1.set_xlabel('x axis')
-ax1.set_ylabel('y axis')
-<<<<<<< HEAD
-plt.plot(t, y)
-=======
-ax1.set_aspect(1)
+# fig1 = plt.figure('fig1')
+# ax1 = fig1.add_subplot(1, 1, 1)
+# fig1.patch.set_facecolor(cs['mdk_dgrey'])
+# ax1.set_xlabel('x axis')
+# ax1.set_ylabel('y axis')
+# ax1.set_aspect(1)
 
-# plt.imshow(G, extent=(x[0], x[-1], y[0], y[-1]), origin='lower')
-surffit = ax1.contour(*coords, G, 5	, cmap=cm.jet)
+# # plt.imshow(G, extent=(x[0], x[-1], y[0], y[-1]), origin='lower')
+# surffit = ax1.contour(*coords, G, 5	, cmap=cm.jet)
 
-plt.plot(xc, yc)
->>>>>>> 364446309de5edc8cc868af64eff55c37b380735
+# plt.plot(xc, yc)
 
 # im3 = plt.figure('im3')
 # ax3 = im3.add_subplot(1, 1, 1)

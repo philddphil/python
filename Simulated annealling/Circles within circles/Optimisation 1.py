@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import csv
 import scipy.optimize as opt
 import socket
-import scipy as sp
 import scipy.io as io
 import importlib.util
 import ntpath
@@ -39,31 +38,45 @@ cs = prd.palette()
 # Do some stuff
 ##############################################################################
 # read in image files from path p1
-<<<<<<< HEAD
-x = np.linspace(-1, 4, 500)
-t = np.linspace(0, 499, 500)
-=======
 res = 1000
-R = 10
-F = 12
+R = 3
+F = 8
+r1 = 2
+r2 = 2 * np.sqrt(3)
+r3 = 4
+r4 = 3 * np.sqrt(3)
+π = np.pi
+n = 2
+# first 13 Hex coordinates ###################################################
+Hex_coords = [(0, 0)]
+for i1 in range(6 * n):
+    a0 = i1 + 1
+    a1 = int(np.ceil((i1 + 1) / 6))
+    a2 = i1 % 6
+
+    if a1 % 2 == 1:
+        ϕ = a2 * π / 3
+        r = a1 + 1
+    else:
+        ϕ = a2 * π / 3 + π / 6
+        r = (1 + a1 / 2) * np.sqrt(3)
+    
+    Hex_coords.append((r, ϕ))
+
+
 x = np.linspace(-F, F, res)
 y = np.linspace(-F, F, res)
 coords = np.meshgrid(x, y)
+Gtot = np.zeros((res, res))
 
-g0 = prd.Gaussian_2D(coords, 1, 0, 5, 1, 1)
-g1 = g0.reshape(res, res)
+for i1, val in enumerate(Hex_coords):
+    x_c = val[0] * np.cos(val[1])
+    y_c = val[0] * np.sin(val[1])
+    g = prd.Gaussian_2D(coords, 1, x_c, y_c, 0.3, 0.3)
+    G = g.reshape(res, res)
 
-g0 = prd.Gaussian_2D(coords, 1, 0, -5, 1, 1)
-g2 = g0.reshape(res, res)
+    Gtot = Gtot + G
 
-G = g1 + g2
-
-η1 = sp.trapz(sp.trapz((g1 * g2), y), x)**2
-η2 = sp.trapz(sp.trapz(g1**2, y), x) * sp.trapz(sp.trapz(g2**2, y), x)
-print(η1 / η2)
->>>>>>> 364446309de5edc8cc868af64eff55c37b380735
-
-y = (1 - sp.special.erf(x)) / 2
 
 (xc, yc) = prd.circle(R, 0, 0)
 
@@ -98,16 +111,12 @@ ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_xlabel('x axis')
 ax1.set_ylabel('y axis')
-<<<<<<< HEAD
-plt.plot(t, y)
-=======
 ax1.set_aspect(1)
 
-# plt.imshow(G, extent=(x[0], x[-1], y[0], y[-1]), origin='lower')
-surffit = ax1.contour(*coords, G, 5	, cmap=cm.jet)
+plt.imshow(Gtot, extent=(x[0], x[-1], y[0], y[-1]), origin='lower')
+# surffit = ax1.contour(*coords, G, 5   , cmap=cm.jet)
 
 plt.plot(xc, yc)
->>>>>>> 364446309de5edc8cc868af64eff55c37b380735
 
 # im3 = plt.figure('im3')
 # ax3 = im3.add_subplot(1, 1, 1)
@@ -117,5 +126,6 @@ plt.plot(xc, yc)
 # plt.imshow(im)
 # cb2 = plt.colorbar()
 # plt.legend()
-
+plt.tight_layout()
 plt.show()
+prd.PPT_save_2d(fig1,ax1,'Hex pack.png')
