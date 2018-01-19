@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import csv
 import scipy.optimize as opt
 import socket
+import scipy as sp
 import scipy.io as io
 import importlib.util
 import ntpath
@@ -36,13 +37,10 @@ cs = prd.palette()
 # Do some stuff
 ##############################################################################
 # read in image files from path p1
-x = np.linspace(0, 2*np.pi, 100)
-y1 = np.sin(x)
-y2 = np.cos(x)
-y3 = np.sin(x**2)
-y4 = np.cos(2*x)
-y5 = np.sin(x)+np.cos(x)
+x = np.linspace(-1, 4, 500)
+t = np.linspace(0, 499, 500)
 
+y = (1 - sp.special.erf(x)) / 2
 
 
 ##############################################################################
@@ -76,11 +74,7 @@ ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_xlabel('x axis')
 ax1.set_ylabel('y axis')
-plt.plot(x, y1)
-plt.plot(x, y2)
-plt.plot(x, y3)
-plt.plot(x, y4)
-plt.plot(x, y5)
+plt.plot(t, y)
 
 # im3 = plt.figure('im3')
 # ax3 = im3.add_subplot(1, 1, 1)
