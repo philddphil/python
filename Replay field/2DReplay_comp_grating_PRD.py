@@ -32,13 +32,9 @@
 #  9) Put back Axicon functionality.
 #
 # ****************************** HOUSEKEEPING ****************************
-from numpy import*
-from pylab import *
-from math import*
-from scipy import signal
+import numpy as np
+import math as m
 import sys
-import time
-import scipy as sp
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -58,9 +54,12 @@ cs = prd.palette()
 w = 30
 Λ = 6
 ϕ = π / 4
-px_edge = 4  # blurring of rect function - bigger = blurier
+px_edge = 1  # blurring of rect function - bigger = blurier
 px_pad = 8
-fft_pad = 4
+fft_pad = 8
+px = 4.6e-6
+λ = 1.55e-6
+f = 9.1e-3
 
 
 ##############################################################################
@@ -77,15 +76,15 @@ fft_pad = 4
 ##############################################################################
 # 1 - Generate Hologram
 ##############################################################################
-(_, phase_SLM) = prd.holo_tilt(Λ, ϕ, δx, δy)
+(_, H) = prd.holo_tilt(Λ, ϕ, δx, δy)
 
 # Increase resolution
 # Increase calculation resolution by representing each pixel by px_pad**2
 # elements to give a total phase and amplitude field of LC x LC points
 
-LCx = np.shape(phase_SLM)[0] * (2 * px_pad + 1)
-LCy = np.shape(phase_SLM)[1] * (2 * px_pad + 1)
-LC_field = prd.Pad_A_elements(phase_SLM, px_pad)
+LCx = np.shape(H)[0] * (2 * px_pad + 1)
+LCy = np.shape(H)[1] * (2 * px_pad + 1)
+LC_field = prd.Pad_A_elements(H, px_pad)
 
 SLM_x = range(LCx)
 SLM_y = range(LCy)
@@ -106,28 +105,27 @@ E_field = np.reshape(G1, (LCx, LCy))
 # 3 - Generate PSF
 ##############################################################################
 # Calculate phase profile for NTxNT points by convolving Np with the psf
-# phase_SLM = conv2(Np,pixel_define);
 # Define a point-spread function representing each pixel
-R0 = zeros((LCx, LCy))
+R0 = np.zeros((LCx, LCy))
 R0[LC_cx - px_pad:LC_cx + px_pad + 1,
     LC_cy - px_pad:LC_cy + px_pad + 1] = 1
 R0 = prd.n_G_blurs(R0, 1, px_edge)
 
 # Define new phase profile
-phase_SLM_1 = fftshift(fft2(fftshift(LC_field))) * \
-    fftshift(fft2(fftshift(R0)))
-phase_SLM_2 = fftshift(ifft2(fftshift(phase_SLM_1)))
+phase_SLM_1 = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(LC_field))) * \
+    np.fft.fftshift(np.fft.fft2(np.fft.fftshift(R0)))
+phase_SLM_2 = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(phase_SLM_1)))
 
 
 ##############################################################################
 # aside - plots (i)
 ##############################################################################
 
-fig3 = figure('fig3')
+fig3 = plt.figure('fig3')
 fig3.patch.set_facecolor(cs['mdk_dgrey'])
 
 ax3_1 = fig3.add_subplot(411)
-plt.plot(phase_SLM[0, 0: 2 * Λ], 'o')
+plt.plot(H[0, 0: 2 * Λ], 'o')
 plt.plot(np.linspace(0, 2 * Λ, 2 * Λ * (2 * px_pad + 1)) - 0.5,
          phase_SLM_2[px_pad, 0: 2 * Λ * (2 * px_pad + 1)])
 
@@ -162,19 +160,19 @@ plt.tight_layout()
 # 4 - Calculate replay field
 ##############################################################################
 # Define phase distribution when there is no hologram displayed
-SLM_zero = zeros([LCx, LCy])
+SLM_zero = np.zeros([LCx, LCy])
 
 # Define zero padding factor, pad, and generate associated replay field
 # calaculation matrices
-E_calc = zeros([fft_pad * LCx, fft_pad * LCy])
-E_calc_phase = zeros([fft_pad * LCx, fft_pad * LCy]) * 0j
+E_calc = np.zeros([fft_pad * LCx, fft_pad * LCy])
+E_calc_phase = np.zeros([fft_pad * LCx, fft_pad * LCy]) * 0j
 E_calc_amplt = E_calc_phase
 
 # Calculation of replay field when no grating is displayed ###################
 E_calc_phase[0:LCx, 0:LCy] = SLM_zero[:, :]
 E_calc_amplt[0:LCx, 0:LCy] = E_field[:, :]
-E_replay_zero = fftshift(
-    fft2(fftshift(E_calc_amplt * np.exp(1j * E_calc_phase))))
+E_replay_zero = np.fft.fftshift(
+    np.fft.fft2(np.fft.fftshift(E_calc_amplt * np.exp(1j * E_calc_phase))))
 I_replay_zero = (abs(E_replay_zero))**2
 
 # Maximum intensity
@@ -187,7 +185,8 @@ E_calc_phase = E_calc * 0j
 # Calculation of replay field when grating is displayed ######################
 E_calc_phase[0:LCx, 0:LCy] = phase_SLM_2[:, :]
 E_calc_amplt[0:LCx, 0:LCy] = E_field[:, :]
-E_replay = fftshift(fft2(fftshift(E_calc_amplt * np.exp(1j * E_calc_phase))))
+E_replay = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(E_calc_amplt * np.exp(
+    1j * E_calc_phase))))
 I_replay = (abs(E_replay))**2
 # Maximum intensity
 I_max_signal = np.max(np.max(I_replay))
@@ -199,20 +198,46 @@ I_replay = I_replay / I_max_zero
 Loss = I_max_signal / I_max_zero
 print('Loss = ', Loss)
 
-I1_final = zeros([200, 200])
+I1_final = np.zeros([200, 200])
 I1_final = 10 * np.log10(I_replay_zero[int(LCx * fft_pad / 2 - 100):
                                        int(LCx * fft_pad / 2 + 100),
                                        int(LCy * fft_pad / 2 - 100):
                                        int(LCy * fft_pad / 2 + 100)])
 I1_final[I1_final < -60] = -60
+I1_final_full = 10 * np.log10(I_replay_zero)
+I1_final_full[I1_final_full < -60] = -60
 
-I2_final = zeros([200, 200])
+I2_final = np.zeros([200, 200])
 I2_final = 10 * np.log10(I_replay[int(LCx * fft_pad / 2 - 100):
                                   int(LCx * fft_pad / 2 + 100),
                                   int(LCy * fft_pad / 2 - 100):
                                   int(LCy * fft_pad / 2 + 100)])
 I2_final[I2_final < -60] = -60
+I2_final_full = 10 * np.log10(I_replay)
+I2_final_full[I2_final_full < -60] = -60
 
+# Generate axis
+LCOS_x = δx * px / 2
+LCOS_y = δy * px / 2
+
+FFT_x = f * λ / (2 * fft_pad * LCOS_x)
+FFT_y = f * λ / (2 * fft_pad * LCOS_y)
+
+LCOS_x_ax = np.linspace(-LCOS_x, LCOS_x, np.shape(phase_SLM_2)[0])
+LCOS_y_ax = np.linspace(-LCOS_y, LCOS_y, np.shape(phase_SLM_2)[1])
+
+FFT_x_ax = np.linspace(-FFT_x * 100 / np.shape(I2_final)[0],
+                       FFT_x * 100 / np.shape(I2_final)[0],
+                       np.shape(I2_final)[0])
+
+
+FFT_y_ax = np.linspace(-FFT_y * 100 / np.shape(I2_final)[1],
+                       FFT_y * 100 / np.shape(I2_final)[1],
+                       np.shape(I2_final)[1])
+
+print(LCOS_x * 1e6)
+print(FFT_x * 1e6)
+print(np.max(FFT_x_ax * 1e6))
 ##############################################################################
 # aside - plots (ii)
 ##############################################################################
@@ -231,28 +256,28 @@ I2_final[I2_final < -60] = -60
 # plt.colorbar()
 # title('Optimized sub-hologram profile (ideal)')
 
-fig5 = figure('fig5')
+fig5 = plt.figure('fig5')
 fig5.patch.set_facecolor(cs['mdk_dgrey'])
 ax51 = fig5.add_subplot(221)
-imshow(I1_final)
+plt.imshow(I1_final_full)
 
 ax52 = fig5.add_subplot(222)
-imshow(I2_final)
+plt.imshow(I2_final_full)
 plt.colorbar()
 
 ax53 = fig5.add_subplot(223)
-imshow(np.abs(E_calc_phase))
+plt.imshow(np.abs(E_calc_phase))
 plt.colorbar()
 plt.title('E_calc_phase', fontsize=8)
 
 ax54 = fig5.add_subplot(224)
-imshow(np.abs(E_calc_amplt))
+plt.imshow(np.abs(E_calc_amplt))
 plt.colorbar()
 ax54.set_title('E_calc_amplt', fontsize=8)
 
 plt.tight_layout()
 
-fig1 = figure('fig1')
+fig1 = plt.figure('fig1')
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1 = fig1.add_subplot(111)
 ax1.set_xlabel('x axis')
@@ -260,23 +285,23 @@ ax1.set_ylabel('y axis')
 
 plt.imshow(I2_final)
 
-fig2 = figure('fig2')
+fig2 = plt.figure('fig2')
 fig2.patch.set_facecolor(cs['mdk_dgrey'])
 ax2 = fig2.add_subplot(111)
 ax2.set_xlabel('x axis')
 ax2.set_ylabel('y axis')
 
-plt.plot(psf[LC_cy, LC_cx - 2 * px_pad - 1:LC_cx + 2 * px_pad + 2], 'o-')
+plt.plot(R0[LC_cy, LC_cx - 2 * px_pad - 1:LC_cx + 2 * px_pad + 2], 'o-')
 plt.plot([px_pad + 1, px_pad + 1], [1, 0], c=cs['ggblue'])
 plt.plot([3 * px_pad + 1, 3 * px_pad + 1], [1, 0], c=cs['ggblue'])
 
 
-fig4 = figure('fig4')
+fig4 = plt.figure('fig4')
 fig4.patch.set_facecolor(cs['mdk_dgrey'])
 ax4 = fig4.add_subplot(111)
 ax4.set_xlabel('x axis')
 ax4.set_ylabel('y axis')
-plt.plot(phase_SLM[0, 0: 2 * Λ], 'o')
+plt.plot(H[0, 0: 2 * Λ], 'o')
 plt.plot(np.linspace(0, 2 * Λ, 2 * Λ * (2 * px_pad + 1)) - 0.5,
          phase_SLM_2[px_pad, 0: 2 * Λ * (2 * px_pad + 1)])
 
@@ -295,7 +320,7 @@ plt.plot(np.linspace(0, 2 * Λ, 2 * Λ * (2 * px_pad + 1)) - 0.5,
 # surf = ax6.plot_surface(XX, YY, I2_final, cmap=cm.coolwarm,
 #                         linewidth=0, antialiased=False)
 
-show()
+plt.show()
 
 prd.PPT_save_2d(fig1, ax1, 'plot0.png')
 prd.PPT_save_2d(fig2, ax2, 'plot1.png')

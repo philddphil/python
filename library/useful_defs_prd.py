@@ -6,15 +6,12 @@ import os
 import glob
 import copy
 import random
-import matplotlib.pyplot as plt
+
 import numpy as np
 import scipy as sp
-import scipy.io as io
-import scipy.optimize as opt
+import matplotlib.pyplot as plt
 
-from scipy.interpolate import RectBivariateSpline
-from scipy.interpolate import interp1d
-from scipy.ndimage.filters import gaussian_filter
+from scipy import ndimage
 from PIL import Image
 
 np.set_printoptions(suppress=True)
@@ -409,8 +406,8 @@ def sin_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off
     # Generate holograms with first two parameters to optimise - Λ and φ #####
 
 
-def holo_tilt(Λ, φ, Hol_δy=50, Hol_δx=50, ϕ_lwlim=0, ϕ_uplim=np.pi * 2, off=0,
-              sin_amp=0, sin_off=0):
+def holo_tilt(Λ=10, φ=np.pi / 4, Hol_δy=50, Hol_δx=50,
+              ϕ_lwlim=0, ϕ_uplim=np.pi * 2, off=0, sin_amp=0, sin_off=0):
     # Generate meshgrid of coordinate points
     x = np.arange(Hol_δx)
     y = np.arange(Hol_δy)
@@ -443,11 +440,90 @@ def holo_tilt(Λ, φ, Hol_δy=50, Hol_δx=50, ϕ_lwlim=0, ϕ_uplim=np.pi * 2, of
     Holo_s = (Z2, Z2_mod)
     return Holo_s
 
-# Calculate replay field for hologram H ##########
-def holo_replay(H):
+
+# Calculate replay field for hologram H #######################################
+def holo_replay(H=holo_tilt()[1], px_edge=1,
+                w=30, px_pad=8, fft_pad=4):
+
+    # Add sub hologram Z_mod to larger hologram (initially set to 0s) ########
+
+    LCx = np.shape(H)[0] * (2 * px_pad + 1)
+    LCy = np.shape(H)[1] * (2 * px_pad + 1)
+    LC_field = Pad_A_elements(H, px_pad)
+    SLM_x = range(LCx)
+    SLM_y = range(LCy)
+    coords = np.meshgrid(SLM_x, SLM_y)
+
+    # 2 - Define Input field (Here it's Gaussian) intensity profile (2D)
+    G1 = Gaussian_2D(coords, 1, LCx / 2, LCy / 2,
+                     0.25 * w * (2 * px_pad + 1),
+                     0.25 * w * (2 * px_pad + 1))
+    E_field = np.reshape(G1, (LCx, LCy))
+    (LC_cx, LC_cy) = max_i_2d(E_field)
+
+    # 3 - Generate PSF for pixel diffraction
+    R0 = np.zeros((LCx, LCy))
+    R0[LC_cx - px_pad:LC_cx + px_pad + 1,
+        LC_cy - px_pad:LC_cy + px_pad + 1] = 1
+    R0 = n_G_blurs(R0, 1, px_edge)
+
+    # Define new phase profile
+    phase_SLM_1 = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(LC_field))) * \
+        np.fft.fftshift(np.fft.fft2(np.fft.fftshift(R0)))
+    phase_SLM_2 = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(phase_SLM_1)))
+
+    # 4 - Calculate replay field
+    # Define phase distribution when there is no hologram displayed
+    SLM_zero = np.zeros([LCx, LCy])
+
+    # Define zero padding factor, pad, and generate associated replay field
+    # calaculation matrices
+    E_calc = np.zeros([fft_pad * LCx, fft_pad * LCy])
+    E_calc_phase = np.zeros([fft_pad * LCx, fft_pad * LCy]) * 0j
+    E_calc_amplt = E_calc_phase
+
+    # Calculation of replay field when no grating is displayed ###############
+    E_calc_phase[0:LCx, 0:LCy] = SLM_zero[:, :]
+    E_calc_amplt[0:LCx, 0:LCy] = E_field[:, :]
+    E_replay_zero = np.fft.fftshift(
+        np.fft.fft2(np.fft.fftshift(E_calc_amplt * np.exp(1j * E_calc_phase))))
+    I_replay_zero = (abs(E_replay_zero))**2
+
+    # Maximum intensity
+    I_max_zero = np.max(np.max(I_replay_zero))
+
+    # Normalized replay field
+    I_replay_zero = I_replay_zero / I_max_zero
+    E_calc_phase = E_calc * 0j
+
+    # Calculation of replay field when grating is displayed ##################
+    E_calc_phase[0:LCx, 0:LCy] = phase_SLM_2[:, :]
+    E_calc_amplt[0:LCx, 0:LCy] = E_field[:, :]
+    E_replay = np.fft.fftshift(
+        np.fft.fft2(np.fft.fftshift(E_calc_amplt * np.exp(1j * E_calc_phase))))
+    I_replay = (abs(E_replay))**2
+    # Maximum intensity
+    # Replay intensity distribution normalized with respect to the undiffracted
+    # zeroth order
+    I_replay = I_replay / I_max_zero
+
+    I1_final = np.zeros([200, 200])
+    I1_final = 10 * np.log10(I_replay_zero[int(LCx * fft_pad / 2 - 100):
+                                           int(LCx * fft_pad / 2 + 100),
+                                           int(LCy * fft_pad / 2 - 100):
+                                           int(LCy * fft_pad / 2 + 100)])
+    I1_final[I1_final < -60] = -60
+
+    I2_final = np.zeros([200, 200])
+    I2_final = 10 * np.log10(I_replay[int(LCx * fft_pad / 2 - 100):
+                                      int(LCx * fft_pad / 2 + 100),
+                                      int(LCy * fft_pad / 2 - 100):
+                                      int(LCy * fft_pad / 2 + 100)])
+    I2_final[I2_final < -60] = -60
+
+    return I2_final
 
 
-# Add sub hologram Z_mod to larger hologram (initially set to 0s) #############
 def add_holo_LCOS(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
     LCOSy = int(LCOSy)
     LCOSx = int(LCOSx)
@@ -934,7 +1010,7 @@ def running_mean(x, N):
 def n_G_blurs(im, n, s=3):
     im_out = im
     for i1 in range(n):
-        im_out = gaussian_filter(im_out, s)
+        im_out = ndimage.filters.gaussian_filter(im_out, s)
 
     return im_out
 
