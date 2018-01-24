@@ -218,6 +218,11 @@ def cross_image(im1, im2):
     return sp.signal.fftconvolve(im1_gray, im2_gray[::-1, ::-1], mode='same')
 
 
+#  For us with extents in imshow ##############################################
+def extents(f):
+    delta = f[1] - f[0]
+    return [f[0] - delta / 2, f[-1] + delta / 2]
+
 ###############################################################################
 # Hologram defs
 ###############################################################################
