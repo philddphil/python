@@ -529,6 +529,7 @@ def holo_replay(H=holo_tilt()[1], px_edge=1,
     return I2_final
 
 
+# Add hologram to current LCOS display ########################################
 def add_holo_LCOS(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
     LCOSy = int(LCOSy)
     LCOSx = int(LCOSx)
