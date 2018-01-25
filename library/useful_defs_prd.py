@@ -6,12 +6,18 @@ import os
 import glob
 import copy
 import random
+import io
 
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
+import scipy.optimize as opt
+
 
 from scipy import ndimage
+from scipy import io
+from scipy.interpolate import interp1d
+
 from PIL import Image
 
 np.set_printoptions(suppress=True)
@@ -223,6 +229,7 @@ def extents(f):
     delta = f[1] - f[0]
     return [f[0] - delta / 2, f[-1] + delta / 2]
 
+
 ###############################################################################
 # Hologram defs
 ###############################################################################
@@ -311,39 +318,39 @@ def holo_gen(*LabVIEW_data):
     Holo_params = (Λ, φ, *Hol_δyx, *ϕ_lims, offset)
 
     # Calculate sub hologram (Holo_s)
-    Zs = holo_tilt(*Holo_params, sin_amp, sin_off)
-    Z0 = Zs[0]
-    Z0_mod = Zs[1]
+    Z1 = phase_tilt(*Holo_params)
+    Z2 = phase_sin(*Holo_params, sin_amp, sin_off)
+    Z2_mod = phase_mod(Z2 + Z1, *ϕ_lims)
 
     # Remap phase with non linear ϕ map
-    H0 = remap_phase(Z0_mod, g_ϕ)
+    H0 = remap_phase(Z2_mod, g_ϕ)
 
     # Use overshooting
-    H0_os = overshoot_phase(H0, g_OSlw, g_OSup, g_min, g_max)
+    H1 = overshoot_phase(H0, g_OSlw, g_OSup, g_min, g_max)
 
     # Calculate full holograms (Holo_f)
-    H0_fin = add_holo_LCOS(*Hol_cyx, H0_os, *LCOS_δyx)
+    H2 = add_holo_LCOS(*Hol_cyx, H1, *LCOS_δyx)
 
     # Save output
-    save_bmp(H0_fin, r"..\..\Data\bmps\hologram")
+    save_bmp(H2, r"..\..\Data\bmps\hologram")
 
-    # Get phase profile plots and save (use tilt angle of 0 for plotting)
-    Zs_1d = holo_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
-    Z0_1d = Zs_1d[0]
-    Z0_mod_1d = Zs_1d[1]
+    # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
+    Z1_0 = phase_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset)
+    Z2_0 = phase_sin(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
+    Z2_0_mod = phase_mod(Z2_0 + Z1_0, *ϕ_lims)
+    Z1_0_mod = phase_mod(Z1_0, *ϕ_lims)
+    h1_0 = remap_phase(Z1_0_mod, g_ϕ)[:, 0]
+    h2_0 = remap_phase(Z2_0_mod, g_ϕ)[:, 0]
+    h3_0 = overshoot_phase(h2_0, g_OSlw, g_OSup, g_min, g_max)
 
-    z0_1d = Z0_1d[0:2 * int(Λ), 0]
-    z0_mod_1d = Z0_1d[0:2 * int(Λ), 0]
+    np.savetxt(r'..\..\Data\Calibration files\greyprofile1.csv',
+               h1_0, delimiter=',')
+    np.savetxt(r'..\..\Data\Calibration files\greyprofile2.csv',
+               h2_0, delimiter=',')
+    np.savetxt(r'..\..\Data\Calibration files\greyprofile3.csv',
+               h3_0, delimiter=',')
 
-    H0_1d = remap_phase(Z0_mod_1d, g_ϕ)
-    H0_1d_os = overshoot_phase(H0_1d, g_OSlw, g_OSup, g_min, g_max)
-
-    h0_1d = H0_1d[0:2 * int(Λ), int(Λ / 2)]
-
-    np.savetxt('phaseprofile0.csv', z0_1d, delimiter=',')
-    np.savetxt('greyprofile0.csv', h0_1d, delimiter=',')
-
-    return [H0_os]
+    return [H1]
 
 
 # Generate 'phase mapping image' for LabVIEW FP ###############################
@@ -395,7 +402,7 @@ def phase_tilt(Λ, φ, H_δy=50, H_δx=50, ϕ_lwlim=0, ϕ_uplim=2 * np.pi, off=0
     return Z1
 
 
-def sin_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
+def phase_sin(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
     # Generate meshgrid of coordinate points
     x = np.arange(Hol_δx)
     y = np.arange(Hol_δy)
@@ -408,9 +415,8 @@ def sin_tilt(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off
                           off * 4 * np.pi / Λ)
     return Z2
 
-    # Generate holograms with first two parameters to optimise - Λ and φ #####
 
-
+# Generate holograms with first two parameters to optimise - Λ and φ ##########
 def holo_tilt(Λ=10, φ=np.pi / 4, Hol_δy=50, Hol_δx=50,
               ϕ_lwlim=0, ϕ_uplim=np.pi * 2, off=0, sin_amp=0, sin_off=0):
     # Generate meshgrid of coordinate points
@@ -444,6 +450,14 @@ def holo_tilt(Λ=10, φ=np.pi / 4, Hol_δy=50, Hol_δx=50,
     # Output all 4
     Holo_s = (Z2, Z2_mod)
     return Holo_s
+
+
+# Modulate a phase front ######################################################
+def phase_mod(Z, ϕ_lwlim, ϕ_uplim):
+    Z_mod = Z % (ϕ_uplim - ϕ_lwlim - 0.00000001)
+    Z_mod = Z_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z_mod)) + ϕ_lwlim
+
+    return Z_mod
 
 
 # Calculate replay field for hologram H #######################################
