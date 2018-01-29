@@ -561,9 +561,9 @@ def add_holo_LCOS(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
 
 
 # Defining the functional form of grayscale to phase (g(ϕ)) ###################
-def phase(x, A, B):
-    ϕ = np.square(np.sin(A * (1 - np.exp(-B * x))))
-    return ϕ
+def P_phase(x, A, B):
+    P = np.square(np.sin(A * (1 - np.exp(-B * x))))
+    return P
 
 
 # Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
@@ -584,7 +584,7 @@ def fit_phase():
     initial_guess = (15, 1 / 800)
 
     try:
-        popt, pcov = opt.curve_fit(phase, x1, f1(
+        popt, pcov = opt.curve_fit(P_phase, x1, f1(
             x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
 
     except RuntimeError:
