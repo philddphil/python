@@ -47,7 +47,7 @@ y_dB = phaseramp['P4'].ravel()
 y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
 x = np.linspace(0,255,255)
-ϕ = prd.phase(x, 15, 1/800)
+P = prd.P_phase(x, 15, 1/800)
 ##############################################################################
 # Plot some figures
 ##############################################################################
@@ -77,9 +77,9 @@ fig1 = plt.figure('fig1')
 ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_xlabel('x axis - g')
-ax1.set_ylabel('y axis - ϕ')
+ax1.set_ylabel('y axis - P')
 
-plt.plot(x, ϕ)
+plt.plot(x, P)
 
 
 # im3 = plt.figure('im3')
