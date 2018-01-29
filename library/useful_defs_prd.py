@@ -589,19 +589,7 @@ def fit_phase():
 
     except RuntimeError:
         print("Error - curve_fit failed")
-
-    # os.chdir(r"C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files")
-    # cs = palette()
-    # fig2 = plt.figure('fig2')
-    # ax2 = fig2.add_subplot(1, 1, 1)
-    # fig2.patch.set_facecolor(cs['mdk_dgrey'])
-    # ax2.set_xlabel('pixel')
-    # ax2.set_ylabel('grey value [0:255] axis')
-    # plt.plot(x3, phase(x3, *popt), '--', lw=0.5)
-    # plt.plot(x0, y_lin, '.', lw=0.5)
-    # PPT_save_2d(fig2, ax2, 'python phase phit.png')
-    # plt.cla()
-
+        
     ϕ_A = popt[0]
     ϕ_B = popt[1]
     ϕ_g = (2 / np.pi) * np.abs(ϕ_A) * (1 - np.exp(-ϕ_B * x3))
