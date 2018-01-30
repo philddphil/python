@@ -56,6 +56,7 @@ phaseramp = io.loadmat(files[0])
 y_dB = phaseramp['P4'].ravel()
 y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
+<<<<<<< HEAD
 
 x0 = np.linspace(0, 255, len(y_dB))
 x1 = np.linspace(0, 255, 25)
@@ -78,6 +79,10 @@ Z1_mod = prd.phase_mod(Z1, ϕ_lw, ϕ_up)
 Z12_mod = prd.phase_mod(Z1 + Z2, ϕ_lw, ϕ_up)
 # ϕ_g = (2 / np.pi) * np.abs(ϕ_A) * (1 - np.exp(-ϕ_B * x))
 
+=======
+x = np.linspace(0,255,255)
+P = prd.P_phase(x, 15, 1/800)
+>>>>>>> 716447576f12cc3460335ac650dfc73d29afdbfc
 ##############################################################################
 # Plot some figures
 ##############################################################################
@@ -106,8 +111,16 @@ Z12_mod = prd.phase_mod(Z1 + Z2, ϕ_lw, ϕ_up)
 fig1 = plt.figure('fig1', figsize=(4, 4))
 ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
+<<<<<<< HEAD
 ax1.set_xlabel('x axis - px')
 ax1.set_ylabel('y axis - phase/π')
+=======
+ax1.set_xlabel('x axis - g')
+ax1.set_ylabel('y axis - P')
+
+plt.plot(x, P)
+
+>>>>>>> 716447576f12cc3460335ac650dfc73d29afdbfc
 
 plt.plot(Z1_mod[0, :] / π, 'o:')
 plt.plot(Z2[0, :] / π, 'o:')
