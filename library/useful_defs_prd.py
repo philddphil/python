@@ -60,7 +60,7 @@ def palette():
                'fibre9d_9': [53 / 255, 119 / 255, 0 / 255],
                ####
                'ggred': [217 / 255, 83 / 255, 25 / 255],
-               'ggblue': [0 / 255, 114 / 255, 189 / 255],
+               'ggblue': [30 / 255, 144 / 255, 229 / 255],
                'ggpurple': [145 / 255, 125 / 255, 240 / 255],
                'ggyellow': [229 / 255, 220 / 255, 90 / 255],
                'gglred': [237 / 255, 103 / 255, 55 / 255],
@@ -248,7 +248,7 @@ def variable_unpack(LabVIEW_data):
     LCOS_δx = LabVIEW_data[0]
     LCOS_δy = LabVIEW_data[1]
 
-    Hol_δx = LabVIEW_data[2]
+    Hδx = LabVIEW_data[2]
     Hol_δy = LabVIEW_data[3]
     Hol_cx = LabVIEW_data[4]
     Hol_cy = LabVIEW_data[5]
@@ -271,7 +271,7 @@ def variable_unpack(LabVIEW_data):
     sin_off = LabVIEW_data[18]
 
     params = [LCOS_δx, LCOS_δy,
-              Hol_δx, Hol_δy, Hol_cx, Hol_cy,
+              Hδx, Hol_δy, Hol_cx, Hol_cy,
               ϕ_min, ϕ_max, ϕ_lwlim, ϕ_uplim,
               g_OSlw, g_OSup, g_min, g_max,
               Λ, φ, offset, sin_amp, sin_off]
@@ -286,10 +286,10 @@ def holo_gen(*LabVIEW_data):
     LCOS_δx = LabVIEW_data[0]
     LCOS_δy = LabVIEW_data[1]
 
-    Hol_δx = LabVIEW_data[2]
-    Hol_δy = LabVIEW_data[3]
-    Hol_cx = LabVIEW_data[4]
-    Hol_cy = LabVIEW_data[5]
+    H_δx = LabVIEW_data[2]
+    H_δy = LabVIEW_data[3]
+    H_cx = LabVIEW_data[4]
+    H_cy = LabVIEW_data[5]
 
     ϕ_lwlim = LabVIEW_data[8]
     ϕ_uplim = LabVIEW_data[9]
@@ -312,31 +312,31 @@ def holo_gen(*LabVIEW_data):
 
     # Define holo params
     LCOS_δyx = (LCOS_δy, LCOS_δx)
-    Hol_δyx = (Hol_δy, Hol_δx)
-    Hol_cyx = (Hol_cy, Hol_cx)
+    H_δyx = (H_δy, H_δx)
+    H_cyx = (H_cy, H_cx)
     ϕ_lims = (ϕ_lwlim, ϕ_uplim)
-    Holo_params = (Λ, φ, *Hol_δyx, *ϕ_lims, offset)
+    Holo_params = (Λ, φ, *H_δyx, *ϕ_lims, offset)
 
     # Calculate sub hologram (Holo_s)
     Z1 = phase_tilt(*Holo_params)
     Z2 = phase_sin(*Holo_params, sin_amp, sin_off)
-    Z2_mod = phase_mod(Z2 + Z1, *ϕ_lims)
+    Z_mod = phase_mod(Z2 + Z1, *ϕ_lims)
 
     # Remap phase with non linear ϕ map
-    H0 = remap_phase(Z2_mod, g_ϕ)
+    H0 = remap_phase(Z_mod, g_ϕ)
 
     # Use overshooting
     H1 = overshoot_phase(H0, g_OSlw, g_OSup, g_min, g_max)
 
     # Calculate full holograms (Holo_f)
-    H2 = add_holo_LCOS(*Hol_cyx, H1, *LCOS_δyx)
+    H2 = add_holo_LCOS(*H_cyx, H1, *LCOS_δyx)
 
     # Save output
     save_bmp(H2, r"..\..\Data\bmps\hologram")
 
     # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
-    Z1_0 = phase_tilt(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset)
-    Z2_0 = phase_sin(Λ, np.pi / 2, *Hol_δyx, *ϕ_lims, offset, sin_amp, sin_off)
+    Z1_0 = phase_tilt(Λ, np.pi / 2, *H_δyx, *ϕ_lims, offset)
+    Z2_0 = phase_sin(Λ, np.pi / 2, *H_δyx, *ϕ_lims, offset, sin_amp, sin_off)
     Z2_0_mod = phase_mod(Z2_0 + Z1_0, *ϕ_lims)
     Z1_0_mod = phase_mod(Z1_0, *ϕ_lims)
     h1_0 = remap_phase(Z1_0_mod, g_ϕ)[:, 0]
@@ -396,64 +396,29 @@ def phase_tilt(Λ, φ, H_δy=50, H_δx=50, ϕ_lwlim=0, ϕ_uplim=2 * np.pi, off=0
     of1 = off * (ϕ_uplim - ϕ_lwlim) / Λ
 
     # Calculate tilted (unmodulated) phase profile
-    Z1 = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) - of1
+    Z = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) - of1
 
     # Output all 4
-    return Z1
+    return Z
 
 
-def phase_sin(Λ, φ, Hol_δy, Hol_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
+# Generate phase front with sinusiodal term (related to Λ) rotated by φ #######
+def phase_sin(Λ, φ, H_δy, H_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
     # Generate meshgrid of coordinate points
-    x = np.arange(Hol_δx)
-    y = np.arange(Hol_δy)
+    x = np.arange(H_δx)
+    y = np.arange(H_δy)
     [X, Y] = np.meshgrid(x, y)
 
     # Calulate higher frequency sinsusoidal profile
-    Z2 = sin_amp * np.sin(4 * np.pi / Λ *
-                          (X * np.cos(φ) + Y * np.sin(φ)) -
-                          sin_off * 4 * np.pi / Λ -
-                          off * 4 * np.pi / Λ)
-    return Z2
-
-
-# Generate holograms with first two parameters to optimise - Λ and φ ##########
-def holo_tilt(Λ=10, φ=np.pi / 4, Hol_δy=50, Hol_δx=50,
-              ϕ_lwlim=0, ϕ_uplim=np.pi * 2, off=0, sin_amp=0, sin_off=0):
-    # Generate meshgrid of coordinate points
-    x = np.arange(Hol_δx)
-    y = np.arange(Hol_δy)
-    [X, Y] = np.meshgrid(x, y)
-
-    # Calculate phase tilt angle from periodicity and usable phase range
-    θ = np.arctan((ϕ_uplim - ϕ_lwlim) / Λ)
-
-    # Convert offset from pixels into phase
-    of1 = off * (ϕ_uplim - ϕ_lwlim) / Λ
-
-    # Calculate tilted (unmodulated) phase profile
-    Z1 = np.tan(θ) * (X * np.cos(φ) + Y * np.sin(φ)) - of1
-
-    # Calulate higher frequency sinsusoidal profile
-    Z2 = sin_amp * np.sin(4 * np.pi / Λ *
-                          (X * np.cos(φ) + Y * np.sin(φ)) -
-                          sin_off * 4 * np.pi / Λ -
-                          off * 4 * np.pi / Λ)
-
-    # Calculate blazed grating (no sinusoid)
-    Z1_mod = Z1 % (ϕ_uplim - ϕ_lwlim - 0.00000001)
-    Z1_mod = Z1_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z1_mod)) + ϕ_lwlim
-
-    # Calculate blazed grating + sinusoid
-    Z2_mod = (Z1 + Z2) % (ϕ_uplim - ϕ_lwlim - 0.00000001)
-    Z2_mod = Z2_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z2_mod)) + ϕ_lwlim
-
-    # Output all 4
-    Holo_s = (Z2, Z2_mod)
-    return Holo_s
+    Z = sin_amp * np.sin((4 * np.pi / Λ) * (
+                         (X * np.cos(φ) + Y * np.sin(φ)) -
+                         sin_off -
+                         off))
+    return Z
 
 
 # Modulate a phase front ######################################################
-def phase_mod(Z, ϕ_lwlim, ϕ_uplim):
+def phase_mod(Z, ϕ_lwlim=0, ϕ_uplim=2 * np.pi):
     Z_mod = Z % (ϕ_uplim - ϕ_lwlim - 0.00000001)
     Z_mod = Z_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z_mod)) + ϕ_lwlim
 
@@ -461,9 +426,7 @@ def phase_mod(Z, ϕ_lwlim, ϕ_uplim):
 
 
 # Calculate replay field for hologram H #######################################
-def holo_replay(H=holo_tilt()[1], px_edge=1,
-                w=30, px_pad=8, fft_pad=4):
-
+def holo_replay(H, px_edge=1, w=30, px_pad=8, fft_pad=4):
     # Add sub hologram Z_mod to larger hologram (initially set to 0s) ########
 
     LCx = np.shape(H)[0] * (2 * px_pad + 1)
@@ -543,19 +506,17 @@ def holo_replay(H=holo_tilt()[1], px_edge=1,
     return I2_final
 
 
-def add_holo_LCOS(Hol_cy, Hol_cx, Z_mod, LCOSy, LCOSx):
+# Add sub-hologram (size [Holδx, Holδy]) to LCOS, size LCOSy, LCOSx ###########
+def add_holo_LCOS(H_cy, H_cx, Z_mod, LCOSy, LCOSx):
     LCOSy = int(LCOSy)
     LCOSx = int(LCOSx)
     b0 = np.array([0, 255])
     Holo_f = np.tile(b0, (LCOSy, int(LCOSx / len(b0))))
-    # Holo_f = 255*np.random.randint(2, size=(LCOSy, LCOSx))
-    # Holo_f = np.random.randint(255, size=(LCOSy, LCOSx))
-    # Holo_f = np.zeros((LCOSy, LCOSx))
-    (Hol_δy, Hol_δx) = np.shape(Z_mod)
-    y1 = np.int(Hol_cy - np.floor(Hol_δy / 2))
-    y2 = np.int(Hol_cy + np.ceil(Hol_δy / 2))
-    x1 = np.int(Hol_cx - np.floor(Hol_δx / 2))
-    x2 = np.int(Hol_cx + np.ceil(Hol_δx / 2))
+    (H_δy, H_δx) = np.shape(Z_mod)
+    y1 = np.int(H_cy - np.floor(H_δy / 2))
+    y2 = np.int(H_cy + np.ceil(H_δy / 2))
+    x1 = np.int(H_cx - np.floor(H_δx / 2))
+    x2 = np.int(H_cx + np.ceil(H_δx / 2))
     Holo_f[y1:y2, x1:x2] = Z_mod
     return Holo_f
 
@@ -584,12 +545,12 @@ def fit_phase():
     initial_guess = (15, 1 / 800)
 
     try:
-        popt, pcov = opt.curve_fit(P_phase, x1, f1(
+        pop, _ = opt.curve_fit(P_phase, x1, f1(
             x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
 
     except RuntimeError:
         print("Error - curve_fit failed")
-        
+
     ϕ_A = popt[0]
     ϕ_B = popt[1]
     ϕ_g = (2 / np.pi) * np.abs(ϕ_A) * (1 - np.exp(-ϕ_B * x3))
