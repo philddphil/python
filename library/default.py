@@ -42,16 +42,16 @@ cs = prd.palette()
 f1 = r"C:\Users\Philip\Documents\LabVIEW\Data\Calibration files\Phaseramp.mat"
 f2 = r"C:\Users\Philip\Desktop"
 Λ = 10
-φ = 0 * π / 4
-H_δx = 2 * Λ
-H_δy = 2 * Λ
-ϕ_lw = 0.3 * π
-ϕ_up = 2.3 * π
+φ = 2 * π / 4
+H_δx = 200
+H_δy = 200
+ϕ_lw = 0.4 * π
+ϕ_up = 2.2 * π
 off = 0
-g_OSlw = 50
-g_OSup = 100
-g_min = 20
-g_max = 220
+g_OSlw = 20
+g_OSup = 140
+g_min = 0
+g_max = 160
 
 files = glob.glob(f1)
 phaseramp = io.loadmat(files[0])
@@ -131,18 +131,18 @@ ax1.set_ylabel('y axis - graylevel')
 
 # plt.plot(ϕ_g/π,'.:', c=cs['ggblue'])
 
-plt.plot(H1[0, :], 'o:')
-plt.plot(H2[0, :], 'o:')
-plt.ylim(0, 255)
+# plt.plot(H1[0, :], 'o:')
+# plt.plot(H2[0, :], 'o:')
+# plt.ylim(0, 255)
 # plt.plot(Z2[0, :] / π, 'o:')
 # plt.plot(ϕ1, 'o:')
 # plt.plot(Z12_mod[0, :] / π, 'o:')
 # plt.ylim(-1, 2)
 
 # plt.imshow(Z12_mod, extent=prd.extents(X) + prd.extents(Y))
-# plt.imshow(H1, extent=prd.extents(X) + prd.extents(Y),
-#            cmap='gray', vmin=0, vmax=255)
-# plt.colorbar()
+plt.imshow(H2, extent=prd.extents(X) + prd.extents(Y),
+           cmap='gray', vmin=0, vmax=255)
+plt.colorbar()
 # im3 = plt.figure('im3')
 # ax3 = im3.add_subplot(1, 1, 1)
 # im3.patch.set_facecolor(cs['mdk_dgrey'])
