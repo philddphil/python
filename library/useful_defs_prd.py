@@ -291,8 +291,8 @@ def holo_gen(*LabVIEW_data):
     H_cx = LabVIEW_data[4]
     H_cy = LabVIEW_data[5]
 
-    ϕ_lwlim = LabVIEW_data[8]
-    ϕ_uplim = LabVIEW_data[9]
+    ϕ_lwlim = np.pi*LabVIEW_data[8]
+    ϕ_uplim = np.pi*LabVIEW_data[9]
 
     g_OSlw = LabVIEW_data[10]
     g_OSup = LabVIEW_data[11]
@@ -307,7 +307,7 @@ def holo_gen(*LabVIEW_data):
     sin_off = LabVIEW_data[18]
 
     # Phase mapping details (ϕ)
-    ϕ_g, ϕ_max = fit_phase()
+    ϕ_g = fit_phase()
     g_ϕ = interp1d(ϕ_g, range(255))
 
     # Define holo params
@@ -351,35 +351,6 @@ def holo_gen(*LabVIEW_data):
                h3_0, delimiter=',')
 
     return [H1]
-
-
-# Generate 'phase mapping image' for LabVIEW FP ###############################
-def phase_plot(*LabVIEW_data):
-    # Unpack parameters
-    ϕ_lwlim = LabVIEW_data[8]
-    ϕ_uplim = LabVIEW_data[9]
-
-    (ϕ_A, ϕ_B, ϕ_g) = fit_phase()
-    g_ϕ = interp1d(ϕ_g, range(255))
-    ϕ_min = min(ϕ_g)
-    ϕ_max = max(ϕ_g)
-
-    plt.plot(ϕ_g, '.-', Color='xkcd:blue')
-    plt.plot(ϕ_min * np.ones(255), Color='xkcd:light red')
-    plt.plot(ϕ_max * np.ones(255), Color='xkcd:light red')
-
-    plt.plot(ϕ_lwlim * np.ones(255), ':', Color='xkcd:light red')
-    plt.plot(ϕ_uplim * np.ones(255), ':', Color='xkcd:light red')
-
-    plt.axvline(x=g_ϕ(ϕ_lwlim), Color='xkcd:light blue')
-    plt.axvline(x=g_ϕ(ϕ_uplim), Color='xkcd:light blue')
-
-    plt.text(180, ϕ_max + 0.2, 'ϕ$_{max}$ = ' + str(np.round(ϕ_max, 3)),
-             horizontalalignment='left', size=20)
-    os.remove(r'..\..\Data\bmps\phase.png')
-    plt.savefig(r'..\..\Data\bmps\phase.png')
-    plt.cla()
-    return (ϕ_min, ϕ_max, g_ϕ)
 
 
 # Generate holograms with first two parameters to optimise - Λ and φ ##########
@@ -570,9 +541,8 @@ def fit_phase():
         print("Error - curve_fit failed")
 
     ϕ_g = ϕ_g_fun(x3, popt[0], popt[1])
-    ϕ_max = ϕ_g_fun(255, popt[0], popt[1])
 
-    return (ϕ_g, ϕ_max)
+    return ϕ_g
 
 
 # Use the fitting results from 'fit_phase' to remap hologram Z_mod ############
