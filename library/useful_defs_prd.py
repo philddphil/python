@@ -234,13 +234,13 @@ def extents(f):
 # Hologram defs
 ###############################################################################
 # Overshoot mapping ###########################################################
-def overshoot_phase(Z_mod1, g_OSlw, g_OSup, g_min, g_max):
-    Z_mod2 = copy.copy(Z_mod1)
-    Super_thres_indices = Z_mod1 > g_OSup
-    Sub_thres_indices = Z_mod1 <= g_OSlw
-    Z_mod2[Super_thres_indices] = g_max
-    Z_mod2[Sub_thres_indices] = g_min
-    return (Z_mod2)
+def overshoot_phase(H1, g_OSlw, g_OSup, g_min, g_max):
+    H2 = copy.copy(H1)
+    Super_thres_indices = H1 > g_OSup
+    Sub_thres_indices = H1 <= g_OSlw
+    H2[Super_thres_indices] = g_max
+    H2[Sub_thres_indices] = g_min
+    return (H2)
 
 
 # Upack values from Hologram control sent by LabVIEW ##########################
@@ -307,7 +307,7 @@ def holo_gen(*LabVIEW_data):
     sin_off = LabVIEW_data[18]
 
     # Phase mapping details (ϕ)
-    (ϕ_A, ϕ_B, ϕ_g) = fit_phase()
+    ϕ_g, ϕ_max = fit_phase()
     g_ϕ = interp1d(ϕ_g, range(255))
 
     # Define holo params
@@ -521,10 +521,28 @@ def add_holo_LCOS(H_cy, H_cx, Z_mod, LCOSy, LCOSx):
     return Holo_f
 
 
-# Defining the functional form of grayscale to phase (g(ϕ)) ###################
-def P_phase(x, A, B):
-    P = np.square(np.sin(A * (1 - np.exp(-B * x))))
+# Defining the function of Power diffracted as a function of greylevel / P(g) #
+def P_g_fun(g, A, B):
+    P = np.square(np.sin(A * (1 - np.exp(-B * g))))
     return P
+
+
+# Defining the function of Power diffracted as a function of ϕ / P(ϕ) #########
+def P_ϕ_fun(ϕ):
+    P = np.square(np.sin(ϕ))
+    return P
+
+
+# Define the function of phase to greyscale / ϕ(g) ############################
+def ϕ_g_fun(g, A, B):
+    ϕ = 2 * A * (1 - np.exp(-B * g))
+    return ϕ
+
+
+# Define the function of greyscale to phase / g(ϕ) ############################
+def g_ϕ_fun(ϕ, A, B):
+    g = np.log(1 - ϕ / (2 * A)) / B
+    return g
 
 
 # Use g(ϕ) defined in 'phase' to fit experimentally obtained phaseramps #######
@@ -545,25 +563,24 @@ def fit_phase():
     initial_guess = (15, 1 / 800)
 
     try:
-        pop, _ = opt.curve_fit(P_phase, x1, f1(
+        popt, _ = opt.curve_fit(P_g_fun, x1, f1(
             x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
 
     except RuntimeError:
         print("Error - curve_fit failed")
 
-    ϕ_A = popt[0]
-    ϕ_B = popt[1]
-    ϕ_g = (2 / np.pi) * np.abs(ϕ_A) * (1 - np.exp(-ϕ_B * x3))
+    ϕ_g = ϕ_g_fun(x3, popt[0], popt[1])
+    ϕ_max = ϕ_g_fun(255, popt[0], popt[1])
 
-    return (ϕ_A, ϕ_B, ϕ_g)
+    return (ϕ_g, ϕ_max)
 
 
 # Use the fitting results from 'fit_phase' to remap hologram Z_mod ############
 def remap_phase(Z_mod, g_ϕ):
-    Z_mod1 = copy.copy(Z_mod)
+    H = copy.copy(Z_mod)
     for i1 in range(np.shape(Z_mod)[0]):
-        Z_mod1[i1, :] = g_ϕ(Z_mod[i1, :])
-    return (Z_mod1)
+        H[i1, :] = g_ϕ(Z_mod[i1, :])
+    return (H)
 
 
 # Use binary search algorithm to find beam on the LCOS ########################
