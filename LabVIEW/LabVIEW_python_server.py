@@ -9,7 +9,6 @@ import time
 import os
 import glob
 import matplotlib.pyplot as plt
-
 import useful_defs_prd as prd
 
 from struct import *
@@ -37,9 +36,12 @@ while True:
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
         variables = re.findall(r'\s(\D*)', hol_data)
-        ϕs = prd.phase_plot(*LabVIEW_data)
-        ϕ_min = (str(round(ϕs[0], 6))).zfill(10)
-        ϕ_max = (str(round(ϕs[1], 6))).zfill(10)
+        ϕ_g = prd.fit_phase()
+        ϕ_max = max(ϕ_g) / np.pi
+        ϕ_min = min(ϕ_g) / np.pi
+
+        ϕ_min = (str(round(ϕ_min, 6))).zfill(10)
+        ϕ_max = (str(round(ϕ_max, 6))).zfill(10)
         data_out = ϕ_min + ',' + ϕ_max
         conn.sendall(bytes(data_out, 'utf-8'))
 
@@ -58,11 +60,13 @@ while True:
 
     elif 'FINDp' in str(cmnd):
         # Do the play action
-        print('FIND')
+        print('FIND ϕ')
         find_data = str(cmnd)
+
         ϕP = find_data.split(',')
         ϕs = ϕP[1].split('\t')
         Ps = ϕP[2].split('\t')
+        print(Ps)
         ϕs = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', ϕP[1])]
         Ps = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', ϕP[2])]
         Ps = np.array(Ps)
@@ -77,11 +81,13 @@ while True:
 
     elif 'FINDL' in str(cmnd):
         # Do the play action
-        print('FIND')
+        print('FIND Λ')
         find_data = str(cmnd)
         ΛP = find_data.split(',')
+
         Λs = ΛP[1].split('\t')
         Ps = ΛP[2].split('\t')
+        print(Ps)
         Λs = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', ΛP[1])]
         Ps = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', ΛP[2])]
         Ps = np.array(Ps)
@@ -120,9 +126,12 @@ while True:
             fibre = [float(i1)
                      for i1 in re.findall(r'[-+]?\d+[\.]?\d*', read_data)]
             fibre = int(fibre[0])
-            filename = 'fibre' + str(fibre) + '.csv'
-            s1 = r'..\..\Data\Calibration files'
-            p1 = os.path.join(s1, filename)
+            if fibre < 10:
+                filename = 'fibre' + str(fibre) + '.csv'
+                s1 = r'..\..\Data\Calibration files'
+                p1 = os.path.join(s1, filename)
+            else:
+                p1 = r"..\..\Data\Python loops\Anneal Hol params keep.txt"
             my_data = np.genfromtxt(p1, delimiter=',')
             data_out = ''
             for i1 in np.ndenumerate(my_data[0:-1]):
@@ -130,6 +139,7 @@ while True:
                 data_out = data_out + ',' + elem
             data_out = data_out[1:]
             print('loaded last ' + 'fibre ' + str(fibre))
+
         except IndexError:
             fibre = [float(i1)
                      for i1 in re.findall(r'[-+]?\d+[\.]?\d*', read_data)]
@@ -155,9 +165,9 @@ while True:
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
         variables = re.findall(r'\s(\D*)', hol_data)
         values = prd.variable_unpack(LabVIEW_data)
-        (ϕ_A, ϕ_B, ϕ_g) = prd.fit_phase()
+        ϕ_g = prd.fit_phase()
         g_ϕ = interp1d(ϕ_g, range(255))
-        g_mid = int(g_ϕ(values[7] / 2))
+        g_mid = int(g_ϕ(np.pi * values[7] / 2))
         values[10] = g_mid + 1
         values[11] = g_mid
         prd.holo_gen(*values)
@@ -216,7 +226,7 @@ while True:
         # print('-1 order = ' + str(np.round(PicoL_last, 3)) + ' dB')
         # print('X-talk   = ' +
         #       str(np.round(np.abs(last_CT400 - last_PicoL), 3)) + ' dB')
-        
+
         Ps_LabVIEW = str(cmnd)
         Ps_current = [float(i1) for i1 in re.findall(
             r'[-+]?\d+[\.]?\d*', Ps_LabVIEW)]
@@ -259,7 +269,7 @@ while True:
         print('ANNEAL')
         # loop_out = prd.anneal_H1(values, Ps_last, Ps_current)
         # loop_out = prd.anneal_H2(values, Ps_last, Ps_current, np.squeeze(H))
-        loop_out = prd.anneal_H3(values, Ps_current, variables)
+        loop_out, values = prd.anneal_H4(values, Ps_current, variables)
         data_in = str(cmnd)
         data_out = (str(round(loop_out, 6))).zfill(10)
         conn.sendall(bytes(str(data_out), 'utf-8'))
@@ -271,4 +281,3 @@ while True:
         break
 
 server.close()
-        

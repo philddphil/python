@@ -291,8 +291,8 @@ def holo_gen(*LabVIEW_data):
     H_cx = LabVIEW_data[4]
     H_cy = LabVIEW_data[5]
 
-    ϕ_lwlim = np.pi*LabVIEW_data[8]
-    ϕ_uplim = np.pi*LabVIEW_data[9]
+    ϕ_lwlim = np.pi * LabVIEW_data[8]
+    ϕ_uplim = np.pi * LabVIEW_data[9]
 
     g_OSlw = LabVIEW_data[10]
     g_OSup = LabVIEW_data[11]
@@ -520,14 +520,13 @@ def g_ϕ_fun(ϕ, A, B):
 def fit_phase():
     # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration
     # files\Phaseramp.mat'
-    f1 = r'..\..\Data\Calibration files\*Phaseramp.mat'
-    files = glob.glob(f1)
-    phaseramp = io.loadmat(files[0])
+    f1 = r'..\..\Data\Calibration files\Phase Ps.csv'
+    f2 = r'..\..\Data\Calibration files\Phase greys.csv'
 
-    y_dB = phaseramp['P4'].ravel()
+    y_dB = np.genfromtxt(f1, delimiter=',')
     y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
-    x0 = np.linspace(0, 255, len(y_dB))
+    x0 = np.genfromtxt(f2, delimiter=',')
     x1 = np.linspace(0, 255, 25)
     x3 = range(255)
     f1 = interp1d(x0, y_lin)
