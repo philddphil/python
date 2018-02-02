@@ -43,11 +43,24 @@ p1 = r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation\Phase res
 f1 = r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation\Phase response\python phase ramps\Phase Ps.csv"
 f2 = r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation\Phase response\python phase ramps\Phase greys.csv"
 
-Ps_dB = np.genfromtxt(f1, delimiter=',')
-Ps_lin = np.power(10, Ps_dB / 10) / np.max(np.power(10, Ps_dB / 10))
+y_dB = np.genfromtxt(f1, delimiter=',')
+y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+
+x0 = np.linspace(0, 255, len(y_lin))
+x1 = np.linspace(0, 255, 25)
+x3 = range(255)
+f1 = interp1d(x0, y_lin)
+initial_guess = (15, 1 / 800)
 
 
-gs = np.genfromtxt(f2, delimiter=',')
+try:
+    popt, _ = opt.curve_fit(prd.P_g_fun, x1, f1(
+        x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
+
+except RuntimeError:
+    print("Error - curve_fit failed")
+
+ϕ_g = prd.ϕ_g_fun(x3, popt[0], popt[1])
 
 ##############################################################################
 # Plot some figures
@@ -86,7 +99,7 @@ ax1.set_ylabel('y axis - graylevel')
 
 # plt.plot(ϕ_g/π,'.:', c=cs['ggblue'])
 
-plt.plot(gs, Ps_lin, '.:')
+plt.plot(x0, y_lin, '.:')
 # plt.plot(H2[0, :], 'o:')
 # plt.ylim(0, 255)
 # plt.plot(Z2[0, :] / π, 'o:')

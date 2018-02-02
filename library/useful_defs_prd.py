@@ -390,8 +390,9 @@ def phase_sin(Λ, φ, H_δy, H_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
 
 # Modulate a phase front ######################################################
 def phase_mod(Z, ϕ_lwlim=0, ϕ_uplim=2 * np.pi):
-    Z_mod = Z % (ϕ_uplim - ϕ_lwlim - 0.00000001)
-    Z_mod = Z_mod * (ϕ_uplim - ϕ_lwlim) / (np.max(Z_mod)) + ϕ_lwlim
+    δϕ = ϕ_uplim - ϕ_lwlim - 0.00000001 
+    Z_mod = Z % (δϕ)
+    Z_mod = Z_mod + ϕ_lwlim
 
     return Z_mod
 

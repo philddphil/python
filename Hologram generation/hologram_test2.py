@@ -41,12 +41,12 @@ cs = prd.palette()
 π = np.pi
 f1 = r"C:\Users\Philip\Documents\LabVIEW\Data\Calibration files\Phaseramp.mat"
 f2 = r"C:\Users\Philip\Desktop"
-Λ = 10
-φ = 2 * π / 4
-H_δx = 200
-H_δy = 200
-ϕ_lw = 0.4 * π
-ϕ_up = 2.2 * π
+Λ = 10.4
+φ = 0 * π / 4
+H_δx = 60
+H_δy = 60
+ϕ_lw = 0. * π
+ϕ_up = 2. * π
 off = 0
 g_OSlw = 20
 g_OSup = 140
@@ -93,7 +93,17 @@ H2 = prd.overshoot_phase(H1, g_OSlw, g_OSup, g_min, g_max)
 x = np.linspace(0, 255, 255)
 P = prd.P_g_fun(x, 15, 1 / 800)
 
+x_HR = np.linspace(0, H_δx, 500)
+y_HR = np.linspace(0, H_δy, 500)
+[X_HR, Y_HR] = np.meshgrid(x_HR, y_HR)
+θ = np.arctan((ϕ_up - ϕ_lw) / Λ)
 
+# Convert offset from pixels into phase
+of1 = off * (ϕ_up - ϕ_lw) / Λ
+
+# Calculate tilted (unmodulated) phase profile
+Z_HR = np.tan(θ) * (X_HR * np.cos(φ) + Y_HR * np.sin(φ)) - of1
+Z_HR_mod = prd.phase_mod(Z_HR, ϕ_lw, ϕ_up)
 ##############################################################################
 # Plot some figures
 ##############################################################################
@@ -134,15 +144,20 @@ ax1.set_ylabel('y axis - graylevel')
 # plt.plot(H1[0, :], 'o:')
 # plt.plot(H2[0, :], 'o:')
 # plt.ylim(0, 255)
-# plt.plot(Z2[0, :] / π, 'o:')
+
 # plt.plot(ϕ1, 'o:')
 # plt.plot(Z12_mod[0, :] / π, 'o:')
 # plt.ylim(-1, 2)
 
 # plt.imshow(Z12_mod, extent=prd.extents(X) + prd.extents(Y))
-plt.imshow(H2, extent=prd.extents(X) + prd.extents(Y),
-           cmap='gray', vmin=0, vmax=255)
-plt.colorbar()
+# plt.imshow(H2, extent=prd.extents(X) + prd.extents(Y),
+#            cmap='gray', vmin=0, vmax=255)
+# plt.colorbar()
+plt.plot(X, Z1_mod[0, :] / π, 'o:')
+plt.plot(X_HR[0, :], Z_HR_mod[0, :] / π)
+ax1.set_xlabel('x axis - px')
+# ax1.set_ylabel('y axis - phase/π')
+ax1.set_ylabel('y axis - graylevel')
 # im3 = plt.figure('im3')
 # ax3 = im3.add_subplot(1, 1, 1)
 # im3.patch.set_facecolor(cs['mdk_dgrey'])
