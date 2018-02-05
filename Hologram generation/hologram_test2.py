@@ -43,15 +43,15 @@ f1 = r"C:\Users\Philip\Documents\LabVIEW\Data\Calibration files\Phaseramp.mat"
 f2 = r"C:\Users\Philip\Desktop"
 Λ = 10
 φ = 0 * π / 4
-H_δx = 60
-H_δy = 60
-ϕ_lw = 0. * π
-ϕ_up = 2. * π
+H_δx = 40
+H_δy = 40
+ϕ_lw = 0.2 * π
+ϕ_up = 2.2 * π
 off = 0
-g_OSlw = 20
-g_OSup = 140
+g_OSlw = 0
+g_OSup = 255
 g_min = 0
-g_max = 160
+g_max = 255
 
 files = glob.glob(f1)
 phaseramp = io.loadmat(files[0])
@@ -129,7 +129,7 @@ Z_HR_mod = prd.phase_mod(Z_HR, ϕ_lw, ϕ_up)
 # wire0 = ax0.plot_wireframe(X[:, 0:a], Y[:, 0:a], Z1[
 #     :, 0:a], color=cs['mdk_dgrey'], lw=0.5, alpha=1)
 
-fig1 = plt.figure('fig1', figsize=(3, 3))
+fig1 = plt.figure('fig1', figsize=(4, 4))
 ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_xlabel('x axis - px')
@@ -153,11 +153,11 @@ ax1.set_ylabel('y axis - graylevel')
 # plt.imshow(H2, extent=prd.extents(X) + prd.extents(Y),
 #            cmap='gray', vmin=0, vmax=255)
 # plt.colorbar()
-plt.plot(X, Z1_mod[0, :] / π, 'o:')
-plt.plot(X_HR[0, :], Z_HR_mod[0, :] / π)
+plt.plot(X, H2[0, :] / π, 'o:')
+# plt.plot(H2[0, :], Z_HR_mod[0, :] / π)
 ax1.set_xlabel('x axis - px')
 # ax1.set_ylabel('y axis - phase/π')
-ax1.set_ylabel('y axis - graylevel')
+# ax1.set_ylabel('y axis - phase (ϕ)')
 # im3 = plt.figure('im3')
 # ax3 = im3.add_subplot(1, 1, 1)
 # im3.patch.set_facecolor(cs['mdk_dgrey'])

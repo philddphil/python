@@ -176,7 +176,9 @@ def PPT_save_2d_im(fig, ax, cb, name):
     ax.tick_params(axis='x', colors='xkcd:charcoal grey')
     ax.tick_params(axis='y', colors='xkcd:charcoal grey')
     cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
+    cbylabel_obj = plt.getp(cb.ax.axes, 'yticklabels')
     plt.setp(cbytick_obj, color='xkcd:charcoal grey')
+
     ax.figure.savefig(name)
 
 
