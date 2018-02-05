@@ -527,7 +527,7 @@ def fit_phase():
     y_dB = np.genfromtxt(f1, delimiter=',')
     y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
-    x0 = np.linspace(0, 255, len(y_lin))
+    x0 = np.genfromtxt(f2, delimiter=',')
     x1 = np.linspace(0, 255, 25)
     x3 = range(255)
     f1 = interp1d(x0, y_lin)
