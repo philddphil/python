@@ -39,17 +39,33 @@ cs = prd.palette()
 # Do some stuff
 ##############################################################################
 π = np.pi
-p1 = r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation\Phase response\python phase ramps"
-f1 = r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation\Phase response\python phase ramps\Phase Ps.csv"
-f2 = r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation\Phase response\python phase ramps\Phase greys.csv"
+p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Phase response\python phase ramps\1543")
+p2 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Phase response\python phase ramps\1551")
+p3 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Phase response\python phase ramps\1557")
+f1 = p1 + r"\Phase Ps.csv"
+f2 = p1 + r"\Phase greys.csv"
+f2 = p2 + r"\Phase Ps.csv"
+f3 = p3 + r"\Phase Ps.csv"
+
 
 y_dB = np.genfromtxt(f1, delimiter=',')
-y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+y_lin1 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
-x0 = np.linspace(0, 255, len(y_lin))
+y_dB = np.genfromtxt(f2, delimiter=',')
+y_lin2 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+
+y_dB = np.genfromtxt(f3, delimiter=',')
+y_lin3 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+
+
+
+x0 = np.linspace(0, 255, len(y_lin1))
 x1 = np.linspace(0, 255, 25)
 x3 = range(255)
-f1 = interp1d(x0, y_lin)
+f1 = interp1d(x0, y_lin1)
 initial_guess = (15, 1 / 800)
 
 
@@ -90,16 +106,20 @@ except RuntimeError:
 fig1 = plt.figure('fig1', figsize=(3, 3))
 ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
-ax1.set_xlabel('x axis - px')
+ax1.set_xlabel('x axis - greylevel')
 # ax1.set_ylabel('y axis - phase/π')
-ax1.set_ylabel('y axis - graylevel')
+ax1.set_ylabel('y axis - Power')
 
 # ax1.set_xlabel('x axis - g')
 # ax1.set_ylabel('y axis - P')
 
 # plt.plot(ϕ_g/π,'.:', c=cs['ggblue'])
 
-plt.plot(x0, y_lin, '.:')
+plt.plot(x0, y_lin1, '.-', label='1543')
+plt.plot(x0, y_lin2, '.-', label='1551')
+plt.plot(x0, y_lin3, '.-', label='1557')
+plt.legend()
+
 # plt.plot(H2[0, :], 'o:')
 # plt.ylim(0, 255)
 # plt.plot(Z2[0, :] / π, 'o:')
