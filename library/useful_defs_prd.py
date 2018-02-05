@@ -390,7 +390,7 @@ def phase_sin(Λ, φ, H_δy, H_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
 
 # Modulate a phase front ######################################################
 def phase_mod(Z, ϕ_lwlim=0, ϕ_uplim=2 * np.pi):
-    δϕ = ϕ_uplim - ϕ_lwlim - 0.00000001 
+    δϕ = ϕ_uplim - ϕ_lwlim - 0.00000001
     Z_mod = Z % (δϕ)
     Z_mod = Z_mod + ϕ_lwlim
 
@@ -527,7 +527,7 @@ def fit_phase():
     y_dB = np.genfromtxt(f1, delimiter=',')
     y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
-    x0 = np.genfromtxt(f2, delimiter=',')
+    x0 = np.linspace(0, 255, len(y_lin))
     x1 = np.linspace(0, 255, 25)
     x3 = range(255)
     f1 = interp1d(x0, y_lin)
