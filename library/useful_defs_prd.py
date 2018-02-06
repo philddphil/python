@@ -13,10 +13,10 @@ import scipy as sp
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
 
-
 from scipy import ndimage
 from scipy import io
 from scipy.interpolate import interp1d
+from scipy.special import erf
 
 from PIL import Image
 
@@ -907,12 +907,12 @@ def merit(Ps):
     return MF
 
 
-# Binarise a grating
-
-###############################################################################
+##########################################################################
 # Maths defs
-###############################################################################
-# Generic 1D Gaussian function ################################################
+##########################################################################
+# Generic 1D Gaussian function ###########################################
+
+
 def Gaussian_1D(x, A, x_c, σ_x, bkg=0, N=1):
     x_c = float(x_c)
     g = bkg + A * np.exp(- (((x - x_c) ** 2) / (2 * σ_x ** 2))**N)
@@ -966,7 +966,7 @@ def running_mean(x, N):
 
 
 # Gaussian blur an image n times ##############################################
-def n_G_blurs(im, n, s=3):
+def n_G_blurs(im, s=3, n=1):
     im_out = im
     for i1 in range(n):
         im_out = ndimage.filters.gaussian_filter(im_out, s)
