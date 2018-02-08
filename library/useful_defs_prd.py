@@ -293,8 +293,8 @@ def holo_gen(*LabVIEW_data):
     H_cx = LabVIEW_data[4]
     H_cy = LabVIEW_data[5]
 
-    ϕ_lwlim = np.pi * LabVIEW_data[8]
-    ϕ_uplim = np.pi * LabVIEW_data[9]
+    ϕ_lw = np.pi * LabVIEW_data[8]
+    ϕ_up = np.pi * LabVIEW_data[9]
 
     g_OSlw = LabVIEW_data[10]
     g_OSup = LabVIEW_data[11]
@@ -310,13 +310,13 @@ def holo_gen(*LabVIEW_data):
 
     # Phase mapping details (ϕ)
     ϕ_g = fit_phase()
-    g_ϕ = interp1d(ϕ_g, range(255))
-
+    g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
+    ϕ_max = ϕ_g[-1]
     # Define holo params
     LCOS_δyx = (LCOS_δy, LCOS_δx)
     H_δyx = (H_δy, H_δx)
     H_cyx = (H_cy, H_cx)
-    ϕ_lims = (ϕ_lwlim, ϕ_uplim)
+    ϕ_lims = (ϕ_lw, ϕ_up)
     Holo_params = (Λ, φ, *H_δyx, *ϕ_lims, offset)
 
     # Calculate sub hologram (Holo_s)
@@ -325,11 +325,21 @@ def holo_gen(*LabVIEW_data):
     Z_mod = phase_mod(Z2 + Z1, *ϕ_lims)
 
     # Remap phase with non linear ϕ map
-    H0 = remap_phase(Z_mod, g_ϕ)
 
-    # Use overshooting
-    H1 = overshoot_phase(H0, g_OSlw, g_OSup, g_min, g_max)
 
+    ϕ1 = np.linspace(0, ϕ_max, 256)
+    gs0 = g_ϕ(ϕ1)
+
+    g_ind1 = gs0 < g_ϕ(ϕ_lw + 0.1)
+    g_ind2 = gs0 > g_ϕ(ϕ_up - 0.5)
+
+    gs0[g_ind1] = g_min
+    gs0[g_ind2] = g_max
+
+    gs0 = n_G_blurs(gs0, 0.5)
+
+    g_ϕ1 = interp1d(ϕ1, gs0)
+    H1 = remap_phase(Z_mod, g_ϕ1)
     # Calculate full holograms (Holo_f)
     H2 = add_holo_LCOS(*H_cyx, H1, *LCOS_δyx)
 
@@ -341,9 +351,9 @@ def holo_gen(*LabVIEW_data):
     Z2_0 = phase_sin(Λ, np.pi / 2, *H_δyx, *ϕ_lims, offset, sin_amp, sin_off)
     Z2_0_mod = phase_mod(Z2_0 + Z1_0, *ϕ_lims)
     Z1_0_mod = phase_mod(Z1_0, *ϕ_lims)
-    h1_0 = remap_phase(Z1_0_mod, g_ϕ)[:, 0]
-    h2_0 = remap_phase(Z2_0_mod, g_ϕ)[:, 0]
-    h3_0 = overshoot_phase(h2_0, g_OSlw, g_OSup, g_min, g_max)
+    h1_0 = remap_phase(Z1_0_mod, g_ϕ1)[:, 0]
+    h2_0 = remap_phase(Z2_0_mod, g_ϕ1)[:, 0]
+    h3_0 = remap_phase(Z2_0_mod, g_ϕ)[:, 0]
 
     np.savetxt(r'..\..\Data\Calibration files\greyprofile1.csv',
                h1_0, delimiter=',')
@@ -531,7 +541,7 @@ def fit_phase():
 
     x0 = np.genfromtxt(f2, delimiter=',')
     x1 = np.linspace(0, 255, 25)
-    x3 = range(255)
+    x3 =  np.linspace(0, 255, 256)
     f1 = interp1d(x0, y_lin)
     initial_guess = (15, 1 / 800)
 
