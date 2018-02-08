@@ -326,7 +326,6 @@ def holo_gen(*LabVIEW_data):
 
     # Remap phase with non linear ϕ map
 
-
     ϕ1 = np.linspace(0, ϕ_max, 256)
     gs0 = g_ϕ(ϕ1)
 
@@ -541,7 +540,7 @@ def fit_phase():
 
     x0 = np.genfromtxt(f2, delimiter=',')
     x1 = np.linspace(0, 255, 25)
-    x3 =  np.linspace(0, 255, 256)
+    x3 = np.linspace(0, 255, 256)
     f1 = interp1d(x0, y_lin)
     initial_guess = (15, 1 / 800)
 
@@ -899,13 +898,102 @@ def anneal_H3(values, Ps_current, variables):
     f0 = open(i0_p, 'w')
     f0.write(str(i0))
     f0.close()
-
     # Termination statement. Search proceeds whilst i1 <= 8
     if MF_current > -6:
         loop_out = 1
     else:
         loop_out = 0
     return(loop_out)
+
+
+# Sweep parameters and select optimal value ##################################
+def sweep(values, Ps_current, variables):
+    i0_p = r'..\..\Data\Python loops\Swept i0.txt'
+    MF_p = r'..\..\Data\Python loops\Swept MF.txt'
+    XT_p = r'..\..\Data\Python loops\Swept XT.txt'
+    IL_p = r'..\..\Data\Python loops\Swept IL.txt'
+    H_swp_p = r'..\..\Data\Python loops\Sweep H .txt'
+    param_swp_p = r'..\..\Data\Python loops\Swept param .txt'
+
+    pts = 20
+
+    MF_current = merit(Ps_current)
+    i0 = np.genfromtxt(i0_p, dtype='int')
+
+    print(i0)
+
+    ϕ_lwlim_rng = (max(values[6], 0.9 * values[8]),
+                   min(values[7], 1.1 * values[8]))
+    ϕ_uplim_rng = (values[9] - 0.1, min(values[7], values[9] + 0.1))
+    g_OSlw_rng = (values[12], values[12] + 1)
+    g_OSup_rng = (values[13] - 1, values[13])
+    g_min_rng = (0, values[10])
+    g_max_rng = (values[11], 255)
+    Λ_rng = (values[14] - 0.1, values[14] + 0.1)
+    φ_rng = (values[15] - 0.2, values[15] + 0.2)
+    offset_rng = (0, values[14])
+    sin_amp_rng = (0, 0.2)
+    sin_off_rng = (0, values[14])
+
+    all_params = [8, 9,
+                  10, 11,
+                  12, 13,
+                  14, 15,
+                  16,
+                  17, 18]
+
+    all_rngs = [ϕ_lwlim_rng, ϕ_uplim_rng,
+                g_OSlw_rng, g_OSup_rng,
+                g_min_rng, g_max_rng,
+                Λ_rng, φ_rng,
+                offset_rng,
+                sin_amp_rng, sin_off_rng]
+
+    param_2_swp = int(8)
+    rng_2_swp = [ϕ_lwlim_rng[0], ϕ_lwlim_rng[1]]
+    rng = np.linspace(rng_2_swp[0], rng_2_swp[1], pts)
+    print(rng)
+    if i0 == 0:
+        np.savetxt(param_swp_p, rng, delimiter=',')
+        new_value = rng[i0]
+        values[param_2_swp] = new_value
+        print(values)
+        print('Param changed is', variables[param_2_swp])
+        print('New value is', new_value)
+        np.savetxt(H_swp_p, values, delimiter=",",
+                   header='see code structure for variable names')
+        holo_gen(*values)
+    else:
+        new_value = rng[i0]
+        values[param_2_swp] = new_value
+        print('New value is', new_value)
+        MF_str = ',' + str(MF_current)
+        f1 = open(MF_p, 'a')
+        f1.write(MF_str)
+        f1.close()
+        XT_str = ',' + str(Ps_current[0] - Ps_current[1])
+        f2 = open(XT_p, 'a')
+        f2.write(XT_str)
+        f2.close()
+        IL_str = ',' + str(Ps_current[0])
+        f3 = open(IL_p, 'a')
+        f3.write(IL_str)
+        f3.close()
+        np.savetxt(H_swp_p, values, delimiter=",",
+                   header='see code structure for variable names')
+        holo_gen(*values)
+
+    i0 = i0 + 1
+    f0 = open(i0_p, 'w')
+    f0.write(str(i0))
+    f0.close()
+
+    # Termination statement. Search proceeds whilst i1 <= 8
+    if i0 == pts:
+        loop_out = 1
+    else:
+        loop_out = 0
+    return loop_out, values
 
 
 # Basic merit function (to be developed) #####################################

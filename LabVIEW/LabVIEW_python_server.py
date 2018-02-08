@@ -269,7 +269,21 @@ while True:
         print('ANNEAL')
         # loop_out = prd.anneal_H1(values, Ps_last, Ps_current)
         # loop_out = prd.anneal_H2(values, Ps_last, Ps_current, np.squeeze(H))
-        loop_out, values = prd.anneal_H4(values, Ps_current, variables)
+        loop_out, values = prd.anneal_H3(values, Ps_current, variables)
+        data_in = str(cmnd)
+        data_out = (str(round(loop_out, 6))).zfill(10)
+        conn.sendall(bytes(str(data_out), 'utf-8'))
+
+    elif 'SWEEP' in str(cmnd):
+        # Take hologram centre coords and create (100 x 100) px random H
+        # N.B. 'values' comes from last displayed hologram
+        # (see 'values' in DISP case)
+        # 'last_Ps and current_Ps' come from previously executed BOTHP cases
+        print('SWEEP')
+        # loop_out = prd.anneal_H1(values, Ps_last, Ps_current)
+        # loop_out = prd.anneal_H2(values, Ps_last, Ps_current, np.squeeze(H))
+        print(hol_values)
+        loop_out, values = prd.sweep(values, Ps_current, variables)
         data_in = str(cmnd)
         data_out = (str(round(loop_out, 6))).zfill(10)
         conn.sendall(bytes(str(data_out), 'utf-8'))
