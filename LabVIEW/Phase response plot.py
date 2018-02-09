@@ -69,7 +69,7 @@ initial_guess = (18, 1 / 850)
 
 try:
     popt, _ = opt.curve_fit(prd.P_g_fun, x1, f1(
-        x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
+        x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]), method='dogbox')
 
 except RuntimeError:
     print("Error - curve_fit failed")
@@ -115,7 +115,9 @@ ax1.set_ylabel('y axis - Power')
 
 plt.plot(x0, y_lin1, '.', label='1543', c=cs['ggred'])
 plt.plot(x3, ϕ_g0, label='1543 fit', c=cs['gglred'])
-plt.plot(x3, ϕ_gi, label='1543 fit', c=cs['ggdred'])
+plt.plot(x3, f1(x3), lw=0.5, label='1543 fit', c=cs['ggdred'])
+
+# plt.plot(x3, ϕ_gi, label='1543 fit', c=cs['ggdred'])
 # plt.plot(x0, y_lin2, '.', label='1551', c=cs['ggblue'])
 # plt.plot(x0, y_lin3, '.', label='1557', c=cs['ggpurple'])
 plt.legend()
