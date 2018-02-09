@@ -496,6 +496,7 @@ def add_holo_LCOS(H_cy, H_cx, Z_mod, LCOSy, LCOSx):
     LCOSx = int(LCOSx)
     b0 = np.array([0, 255])
     Holo_f = np.tile(b0, (LCOSy, int(LCOSx / len(b0))))
+    # Holo_f = np.zeros((LCOSy,LCOSx))
     (H_δy, H_δx) = np.shape(Z_mod)
     y1 = np.int(H_cy - np.floor(H_δy / 2))
     y2 = np.int(H_cy + np.ceil(H_δy / 2))
