@@ -40,42 +40,24 @@ cs = prd.palette()
 ##############################################################################
 π = np.pi
 p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Phase response\python phase ramps\1543")
-p2 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Phase response\python phase ramps\1551")
-p3 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Phase response\python phase ramps\1557")
-f1 = p1 + r"\Phase Ps.csv"
-f2 = p1 + r"\Phase greys.csv"
-f2 = p2 + r"\Phase Ps.csv"
-f3 = p3 + r"\Phase Ps.csv"
+      r"\Single param sweep\180208\2nd sweep (fixed comma prob)")
+f0 = r"\Sweep H.txt"
+f1 = r"\Swept i0.txt"
+f2 = r"\Swept IL.txt"
+f3 = r"\Swept MF.txt"
+f4 = r"\Swept XT.txt"
+f5 = r"\Swept param.txt"
 
-y_dB = np.genfromtxt(f1, delimiter=',')
-y_lin1 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+i0s = np.genfromtxt(p1 + f1, delimiter=',')
+IL = np.genfromtxt(p1 + f2, delimiter=',')
+MF = np.genfromtxt(p1 + f3, delimiter=',')
+XT = np.genfromtxt(p1 + f4, delimiter=',')
+v = np.genfromtxt(p1 + f5, delimiter=',')
+print(np.mean(IL,0))
+print(XT)
+print(MF)
+print(IL)
 
-y_dB = np.genfromtxt(f2, delimiter=',')
-y_lin2 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
-
-y_dB = np.genfromtxt(f3, delimiter=',')
-y_lin3 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
-
-x0 = np.linspace(0, 255, len(y_lin1))
-x1 = np.linspace(0, 255, 25)
-x3 = np.linspace(0, 255, 256)
-
-f1 = interp1d(x0, y_lin1)
-initial_guess = (18, 1 / 850)
-
-
-try:
-    popt, _ = opt.curve_fit(prd.P_g_fun, x1, f1(
-        x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
-
-except RuntimeError:
-    print("Error - curve_fit failed")
-
-ϕ_g0 = prd.P_g_fun(x3, popt[0], popt[1])
-ϕ_gi = prd.P_g_fun(x3, *initial_guess)
 ##############################################################################
 # Plot some figures
 ##############################################################################
@@ -104,22 +86,20 @@ except RuntimeError:
 fig1 = plt.figure('fig1', figsize=(3, 3))
 ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
-ax1.set_xlabel('x axis - greylevel')
+ax1.set_xlabel('x axis - min phase / π')
 # ax1.set_ylabel('y axis - phase/π')
-ax1.set_ylabel('y axis - Power')
+ax1.set_ylabel('y axis - a.u')
 
 # ax1.set_xlabel('x axis - g')
 # ax1.set_ylabel('y axis - P')
 
-# plt.plot(ϕ_g/π,'.:', c=cs['ggblue'])
-
-plt.plot(x0, y_lin1, '.', label='1543', c=cs['ggred'])
-plt.plot(x3, ϕ_g0, label='1543 fit', c=cs['gglred'])
-plt.plot(x3, ϕ_gi, label='1543 fit', c=cs['ggdred'])
-# plt.plot(x0, y_lin2, '.', label='1551', c=cs['ggblue'])
-# plt.plot(x0, y_lin3, '.', label='1557', c=cs['ggpurple'])
+plt.plot(v, MF-np.mean(MF), label = 'MF')
+plt.plot(v, IL-np.mean(IL), label = 'IL')
+plt.plot(v, XT-np.mean(XT), label = 'XT')
 plt.legend()
 
+
+# plt.plot(H1[0, :], 'o:')
 # plt.plot(H2[0, :], 'o:')
 # plt.ylim(0, 255)
 # plt.plot(Z2[0, :] / π, 'o:')
@@ -128,9 +108,6 @@ plt.legend()
 # plt.ylim(-1, 2)
 
 # plt.imshow(Z12_mod, extent=prd.extents(X) + prd.extents(Y))
-# plt.imshow(H2, extent=prd.extents(X) + prd.extents(Y),
-#            cmap='gray', vmin=0, vmax=255)
-# plt.colorbar()
 # im3 = plt.figure('im3')
 # ax3 = im3.add_subplot(1, 1, 1)
 # im3.patch.set_facecolor(cs['mdk_dgrey'])
@@ -141,5 +118,5 @@ plt.legend()
 # plt.legend()
 plt.tight_layout()
 plt.show()
-os.chdir(p1)
+os.chdir(f2)
 prd.PPT_save_2d(fig1, ax1, 'plot1.png')
