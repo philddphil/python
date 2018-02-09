@@ -7,6 +7,7 @@ import glob
 import copy
 import random
 import io
+import csv
 
 import numpy as np
 import scipy as sp
@@ -912,8 +913,8 @@ def sweep(values, Ps_current, variables):
     MF_p = r'..\..\Data\Python loops\Swept MF.txt'
     XT_p = r'..\..\Data\Python loops\Swept XT.txt'
     IL_p = r'..\..\Data\Python loops\Swept IL.txt'
-    H_swp_p = r'..\..\Data\Python loops\Sweep H .txt'
-    param_swp_p = r'..\..\Data\Python loops\Swept param .txt'
+    H_swp_p = r'..\..\Data\Python loops\Sweep H.txt'
+    param_swp_p = r'..\..\Data\Python loops\Swept param.txt'
 
     pts = 20
 
@@ -952,14 +953,10 @@ def sweep(values, Ps_current, variables):
     param_2_swp = int(8)
     rng_2_swp = [ϕ_lwlim_rng[0], ϕ_lwlim_rng[1]]
     rng = np.linspace(rng_2_swp[0], rng_2_swp[1], pts)
-    print(rng)
     if i0 == 0:
         np.savetxt(param_swp_p, rng, delimiter=',')
         new_value = rng[i0]
         values[param_2_swp] = new_value
-        print(values)
-        print('Param changed is', variables[param_2_swp])
-        print('New value is', new_value)
         np.savetxt(H_swp_p, values, delimiter=",",
                    header='see code structure for variable names')
         holo_gen(*values)
@@ -967,18 +964,32 @@ def sweep(values, Ps_current, variables):
         new_value = rng[i0]
         values[param_2_swp] = new_value
         print('New value is', new_value)
-        MF_str = ',' + str(MF_current)
-        f1 = open(MF_p, 'a')
-        f1.write(MF_str)
-        f1.close()
-        XT_str = ',' + str(Ps_current[0] - Ps_current[1])
-        f2 = open(XT_p, 'a')
-        f2.write(XT_str)
-        f2.close()
-        IL_str = ',' + str(Ps_current[0])
-        f3 = open(IL_p, 'a')
-        f3.write(IL_str)
-        f3.close()
+        if i0 == pts:
+            MF_str = str(MF_current)
+            f1 = open(MF_p, 'a')
+            f1.write(MF_str)
+            f1.close()
+            XT_str = str(Ps_current[0] - Ps_current[1])
+            f2 = open(XT_p, 'a')
+            f2.write(XT_str)
+            f2.close()
+            IL_str = str(Ps_current[0]) 
+            f3 = open(IL_p, 'a')
+            f3.write(IL_str)
+            f3.close()
+        else:
+            MF_str = str(MF_current) + ','
+            f1 = open(MF_p, 'a')
+            f1.write(MF_str)
+            f1.close()
+            XT_str = str(Ps_current[0] - Ps_current[1]) + ','
+            f2 = open(XT_p, 'a')
+            f2.write(XT_str)
+            f2.close()
+            IL_str = str(Ps_current[0]) + ','
+            f3 = open(IL_p, 'a')
+            f3.write(IL_str)
+            f3.close()
         np.savetxt(H_swp_p, values, delimiter=",",
                    header='see code structure for variable names')
         holo_gen(*values)
