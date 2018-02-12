@@ -40,7 +40,7 @@ cs = prd.palette()
 ##############################################################################
 π = np.pi
 p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Single param sweep\180212\7")
+      r"\Single param sweep\180212\9")
 f0 = r"\Sweep H.txt"
 f1 = r"\Swept i0.txt"
 f2 = r"\Swept IL.txt"
@@ -55,22 +55,21 @@ XT = np.genfromtxt(p1 + f4, delimiter=',')
 v = np.genfromtxt(p1 + f5, delimiter=',')
 v_100 = np.linspace(np.min(v), np.max(v), 100)
 
-IL_n = IL - np.mean(IL)
-XT_n = XT - np.mean(XT)
-MF_n = MF - np.mean(MF)
 
-initial_guess = (-10, np.mean(v), 0.1, 10)
+initial_guess = (10, np.mean(v), 0.05, -45)
 print(initial_guess)
 try:
-    popt, _ = opt.curve_fit(prd.Gaussian_1D, v, MF_n,
+    popt, _ = opt.curve_fit(prd.Gaussian_1D, v, MF,
                             p0=initial_guess,
-                            bounds=([-np.inf, -np.inf, -np.inf],
-                                    [np.inf, np.inf, np.inf]))
+                            bounds=([-np.inf, -np.inf, -np.inf, -np.inf],
+                                    [np.inf, np.inf, np.inf, np.inf]))
 
 except RuntimeError:
     print("Error - curve_fit failed")
-print(popt[0], popt[1], popt[2])
+print(popt[0], popt[1], popt[2], popt[3])
+
 MF_f = prd.Gaussian_1D(v_100, *popt)
+MF_fi = prd.Gaussian_1D(v_100, *initial_guess)
 ##############################################################################
 # Plot some figures
 ##############################################################################
@@ -106,8 +105,10 @@ ax1.set_ylabel('y axis - a.u')
 # ax1.set_xlabel('x axis - g')
 # ax1.set_ylabel('y axis - P')
 
-plt.plot(v, MF - np.mean(MF), '.', c=cs['ggred'], label='MF')
+plt.plot(v, MF, '.', c=cs['ggred'], label='MF')
 plt.plot(v_100, MF_f, c=cs['ggdred'], label='MF fit', lw=0.5)
+plt.plot(v_100, MF_fi, c=cs['gglred'], label='MFi fit', lw=0.5)
+
 
 # plt.plot(v, IL - np.mean(IL), '.', c=cs['ggblue'], label='IL')
 # plt.plot(v, XT - np.mean(XT), '.', c=cs['ggpurple'], label='XT')
