@@ -915,6 +915,7 @@ def sweep(values, Ps_current, variables):
     MF_p = r'..\..\Data\Python loops\Swept MF.txt'
     XT_p = r'..\..\Data\Python loops\Swept XT.txt'
     IL_p = r'..\..\Data\Python loops\Swept IL.txt'
+    Rng_p = r'..\..\Data\Python loops\Swept Rng.txt'
     H_swp_p = r'..\..\Data\Python loops\Sweep H.txt'
     param_swp_p = r'..\..\Data\Python loops\Swept param.txt'
 
@@ -922,46 +923,52 @@ def sweep(values, Ps_current, variables):
 
     MF_current = merit(Ps_current)
     i0 = np.genfromtxt(i0_p, dtype='int')
+    rng = np.genfromtxt(param_swp_p)
+    param_2_swp = int(8)
 
     print(i0)
+    print(rng)
 
-    ϕ_lwlim_rng = (max(values[6], 0.9 * values[8]),
-                   min(values[7], 1.1 * values[8]))
-    ϕ_uplim_rng = (values[9] - 0.1, min(values[7], values[9] + 0.1))
-    g_OSlw_rng = (values[12], values[12] + 1)
-    g_OSup_rng = (values[13] - 1, values[13])
-    g_min_rng = (0, values[10])
-    g_max_rng = (values[11], 255)
-    Λ_rng = (values[14] - 0.1, values[14] + 0.1)
-    φ_rng = (values[15] - 0.2, values[15] + 0.2)
-    offset_rng = (0, values[14])
-    sin_amp_rng = (0, 0.2)
-    sin_off_rng = (0, values[14])
-
-    all_params = [8, 9,
-                  10, 11,
-                  12, 13,
-                  14, 15,
-                  16,
-                  17, 18]
-
-    all_rngs = [ϕ_lwlim_rng, ϕ_uplim_rng,
-                g_OSlw_rng, g_OSup_rng,
-                g_min_rng, g_max_rng,
-                Λ_rng, φ_rng,
-                offset_rng,
-                sin_amp_rng, sin_off_rng]
-
-    param_2_swp = int(8)
-    rng_2_swp = [ϕ_lwlim_rng[0], ϕ_lwlim_rng[1]]
-    rng = np.linspace(rng_2_swp[0], rng_2_swp[1], pts)
     if i0 == 0:
+
+        ϕ_lwlim_rng = (max(values[6], 0.9 * values[8]),
+                       min(values[7], 1.1 * values[8]))
+        ϕ_uplim_rng = (values[9] - 0.1, min(values[7], values[9] + 0.1))
+        g_OSlw_rng = (values[12], values[12] + 1)
+        g_OSup_rng = (values[13] - 1, values[13])
+        g_min_rng = (0, values[10])
+        g_max_rng = (values[11], 255)
+        Λ_rng = (values[14] - 0.1, values[14] + 0.1)
+        φ_rng = (values[15] - 0.2, values[15] + 0.2)
+        offset_rng = (0, values[14])
+        sin_amp_rng = (0, 0.2)
+        sin_off_rng = (0, values[14])
+
+        all_params = [8, 9,
+                      10, 11,
+                      12, 13,
+                      14, 15,
+                      16,
+                      17, 18]
+
+        all_rngs = [ϕ_lwlim_rng, ϕ_uplim_rng,
+                    g_OSlw_rng, g_OSup_rng,
+                    g_min_rng, g_max_rng,
+                    Λ_rng, φ_rng,
+                    offset_rng,
+                    sin_amp_rng, sin_off_rng]
+
+        param_2_swp = int(8)
+        rng_2_swp = [ϕ_lwlim_rng[0], ϕ_lwlim_rng[1]]
+        rng = np.linspace(rng_2_swp[0], rng_2_swp[1], pts)
+        print(rng)
         np.savetxt(param_swp_p, rng, delimiter=',')
         new_value = rng[i0]
         values[param_2_swp] = new_value
         np.savetxt(H_swp_p, values, delimiter=",",
                    header='see code structure for variable names')
         holo_gen(*values)
+
     elif i0 == pts:
         MF_str = str(MF_current)
         f1 = open(MF_p, 'a')
@@ -975,6 +982,10 @@ def sweep(values, Ps_current, variables):
         f3 = open(IL_p, 'a')
         f3.write(IL_str)
         f3.close()
+        Rng_str = str(rng[i0 - 1])
+        f4 = open(Rng_p, 'a')
+        f4.write(Rng_str)
+        f4.close()
     else:
         new_value = rng[i0]
         values[param_2_swp] = new_value
@@ -991,6 +1002,10 @@ def sweep(values, Ps_current, variables):
         f3 = open(IL_p, 'a')
         f3.write(IL_str)
         f3.close()
+        Rng_str = str(rng[i0 - 1]) + ','
+        f4 = open(Rng_p, 'a')
+        f4.write(Rng_str)
+        f4.close()
         np.savetxt(H_swp_p, values, delimiter=",",
                    header='see code structure for variable names')
         holo_gen(*values)
@@ -1028,19 +1043,17 @@ def sweep_fit():
     MF = np.genfromtxt(p1 + f3, delimiter=',')
     v = np.genfromtxt(p1 + f5, delimiter=',')
 
-    MF_n = MF - np.mean(MF)
-
-    initial_guess = (-10, np.mean(v), 0.1, 10)
-    print(initial_guess)
+    initial_guess = (10, np.mean(v), 0.05, -45)
     try:
-        popt, _ = opt.curve_fit(Gaussian_1D, v, MF_n,
+        popt, _ = opt.curve_fit(Gaussian_1D, v, MF,
                                 p0=initial_guess,
-                                bounds=([-np.inf, -np.inf, -np.inf],
-                                        [np.inf, np.inf, np.inf]))
+                                bounds=([-np.inf, -np.inf, -np.inf, -np.inf],
+                                        [np.inf, np.inf, np.inf, np.inf]))
 
     except RuntimeError:
         print("Error - curve_fit failed")
-    return popt[2]
+        popt = [0, np.mean(v), 0]
+    return popt[1]
 
 
 ###############################################################################

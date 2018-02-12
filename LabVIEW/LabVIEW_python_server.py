@@ -280,12 +280,20 @@ while True:
         # (see 'values' in DISP case)
         # 'last_Ps and current_Ps' come from previously executed BOTHP cases
         print('SWEEP')
-        # loop_out = prd.anneal_H1(values, Ps_last, Ps_current)
-        # loop_out = prd.anneal_H2(values, Ps_last, Ps_current, np.squeeze(H))
-        print(hol_values)
         loop_out, values = prd.sweep(values, Ps_current, variables)
+        if loop_out == 1:
+            opt_val = prd.sweep_fit()
+            print(opt_val)
+            values[8] = opt_val
+            
         data_in = str(cmnd)
         data_out = (str(round(loop_out, 6))).zfill(10)
+        current_hol = np.array(values)
+
+        for i1 in np.ndenumerate(current_hol[0:]):
+            elem = (str(round(i1[1], 6))).zfill(10)
+            data_out = data_out + ',' + elem
+
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'QUIT' in str(cmnd):
