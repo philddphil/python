@@ -962,50 +962,51 @@ def sweep(values, Ps_current, variables):
         np.savetxt(H_swp_p, values, delimiter=",",
                    header='see code structure for variable names')
         holo_gen(*values)
+    elif i0 == pts:
+        MF_str = str(MF_current)
+        f1 = open(MF_p, 'a')
+        f1.write(MF_str)
+        f1.close()
+        XT_str = str(Ps_current[0] - Ps_current[1])
+        f2 = open(XT_p, 'a')
+        f2.write(XT_str)
+        f2.close()
+        IL_str = str(Ps_current[0])
+        f3 = open(IL_p, 'a')
+        f3.write(IL_str)
+        f3.close()
     else:
         new_value = rng[i0]
         values[param_2_swp] = new_value
         print('New value is', new_value)
-        if i0 == pts:
-            MF_str = str(MF_current)
-            f1 = open(MF_p, 'a')
-            f1.write(MF_str)
-            f1.close()
-            XT_str = str(Ps_current[0] - Ps_current[1])
-            f2 = open(XT_p, 'a')
-            f2.write(XT_str)
-            f2.close()
-            IL_str = str(Ps_current[0]) 
-            f3 = open(IL_p, 'a')
-            f3.write(IL_str)
-            f3.close()
-        else:
-            MF_str = str(MF_current) + ','
-            f1 = open(MF_p, 'a')
-            f1.write(MF_str)
-            f1.close()
-            XT_str = str(Ps_current[0] - Ps_current[1]) + ','
-            f2 = open(XT_p, 'a')
-            f2.write(XT_str)
-            f2.close()
-            IL_str = str(Ps_current[0]) + ','
-            f3 = open(IL_p, 'a')
-            f3.write(IL_str)
-            f3.close()
+        MF_str = str(MF_current) + ','
+        f1 = open(MF_p, 'a')
+        f1.write(MF_str)
+        f1.close()
+        XT_str = str(Ps_current[0] - Ps_current[1]) + ','
+        f2 = open(XT_p, 'a')
+        f2.write(XT_str)
+        f2.close()
+        IL_str = str(Ps_current[0]) + ','
+        f3 = open(IL_p, 'a')
+        f3.write(IL_str)
+        f3.close()
         np.savetxt(H_swp_p, values, delimiter=",",
                    header='see code structure for variable names')
         holo_gen(*values)
+
+    # Termination statement. Search proceeds whilst i1 <= 8
+    if i0 == pts:
+        loop_out = 1
+        print('End sweep')
+    else:
+        loop_out = 0
+        print('Carry on')
 
     i0 = i0 + 1
     f0 = open(i0_p, 'w')
     f0.write(str(i0))
     f0.close()
-
-    # Termination statement. Search proceeds whilst i1 <= 8
-    if i0 == pts:
-        loop_out = 1
-    else:
-        loop_out = 0
     return loop_out, values
 
 
@@ -1017,6 +1018,22 @@ def merit(Ps):
     MF = IL - (55 - XT)
     return MF
 
+
+# Fit the sweep results ######################################################
+def sweep_fit():
+    p1 = (r"..\..\Data\Python loops")
+    f0 = r"\Sweep H.txt"
+    f1 = r"\Swept i0.txt"
+    f2 = r"\Swept IL.txt"
+    f3 = r"\Swept MF.txt"
+    f4 = r"\Swept XT.txt"
+    f5 = r"\Swept param.txt"
+
+    i0s = np.genfromtxt(p1 + f1, delimiter=',')
+    IL = np.genfromtxt(p1 + f2, delimiter=',')
+    MF = np.genfromtxt(p1 + f3, delimiter=',')
+    XT = np.genfromtxt(p1 + f4, delimiter=',')
+    v = np.genfromtxt(p1 + f5, delimiter=',')
 
 ###############################################################################
 # Maths defs
