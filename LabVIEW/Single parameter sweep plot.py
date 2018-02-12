@@ -53,11 +53,24 @@ IL = np.genfromtxt(p1 + f2, delimiter=',')
 MF = np.genfromtxt(p1 + f3, delimiter=',')
 XT = np.genfromtxt(p1 + f4, delimiter=',')
 v = np.genfromtxt(p1 + f5, delimiter=',')
-print(np.mean(IL,0))
-print(XT)
-print(MF)
-print(IL)
+v_100 = np.linspace(np.min(v), np.max(v), 100)
 
+IL_n = IL - np.mean(IL)
+XT_n = XT - np.mean(XT)
+MF_n = MF - np.mean(MF)
+
+initial_guess = (-10, np.mean(v), 0.1, 10)
+print(initial_guess)
+try:
+    popt, _ = opt.curve_fit(prd.Gaussian_1D, v, MF_n,
+                            p0=initial_guess,
+                            bounds=([-np.inf, -np.inf, -np.inf],
+                                    [np.inf, np.inf, np.inf]))
+
+except RuntimeError:
+    print("Error - curve_fit failed")
+print(popt[0], popt[1], popt[2])
+MF_f = prd.Gaussian_1D(v_100, *popt)
 ##############################################################################
 # Plot some figures
 ##############################################################################
@@ -83,7 +96,7 @@ print(IL)
 # wire0 = ax0.plot_wireframe(X[:, 0:a], Y[:, 0:a], Z1[
 #     :, 0:a], color=cs['mdk_dgrey'], lw=0.5, alpha=1)
 
-fig1 = plt.figure('fig1', figsize=(3, 3))
+fig1 = plt.figure('fig1', figsize=(4, 4))
 ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_xlabel('x axis - min phase / π')
@@ -93,9 +106,12 @@ ax1.set_ylabel('y axis - a.u')
 # ax1.set_xlabel('x axis - g')
 # ax1.set_ylabel('y axis - P')
 
-plt.plot(v, MF-np.mean(MF), label = 'MF')
-plt.plot(v, IL-np.mean(IL), label = 'IL')
-plt.plot(v, XT-np.mean(XT), label = 'XT')
+plt.plot(v, MF - np.mean(MF), '.', c=cs['ggred'], label='MF')
+plt.plot(v_100, MF_f, c=cs['ggdred'], label='MF fit', lw=0.5)
+
+# plt.plot(v, IL - np.mean(IL), '.', c=cs['ggblue'], label='IL')
+# plt.plot(v, XT - np.mean(XT), '.', c=cs['ggpurple'], label='XT')
+
 plt.legend()
 
 
@@ -118,5 +134,5 @@ plt.legend()
 # plt.legend()
 plt.tight_layout()
 plt.show()
-os.chdir(f2)
+os.chdir(p1)
 prd.PPT_save_2d(fig1, ax1, 'plot1.png')

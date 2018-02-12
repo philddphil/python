@@ -1022,18 +1022,26 @@ def merit(Ps):
 # Fit the sweep results ######################################################
 def sweep_fit():
     p1 = (r"..\..\Data\Python loops")
-    f0 = r"\Sweep H.txt"
-    f1 = r"\Swept i0.txt"
-    f2 = r"\Swept IL.txt"
     f3 = r"\Swept MF.txt"
-    f4 = r"\Swept XT.txt"
     f5 = r"\Swept param.txt"
 
-    i0s = np.genfromtxt(p1 + f1, delimiter=',')
-    IL = np.genfromtxt(p1 + f2, delimiter=',')
     MF = np.genfromtxt(p1 + f3, delimiter=',')
-    XT = np.genfromtxt(p1 + f4, delimiter=',')
     v = np.genfromtxt(p1 + f5, delimiter=',')
+
+    MF_n = MF - np.mean(MF)
+
+    initial_guess = (-10, np.mean(v), 0.1, 10)
+    print(initial_guess)
+    try:
+        popt, _ = opt.curve_fit(Gaussian_1D, v, MF_n,
+                                p0=initial_guess,
+                                bounds=([-np.inf, -np.inf, -np.inf],
+                                        [np.inf, np.inf, np.inf]))
+
+    except RuntimeError:
+        print("Error - curve_fit failed")
+    return popt[2]
+
 
 ###############################################################################
 # Maths defs
