@@ -40,7 +40,7 @@ cs = prd.palette()
 ##############################################################################
 π = np.pi
 p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Single param sweep\180208\2nd sweep (fixed comma prob)")
+      r"\Single param sweep\180212\7")
 f0 = r"\Sweep H.txt"
 f1 = r"\Swept i0.txt"
 f2 = r"\Swept IL.txt"

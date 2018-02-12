@@ -69,13 +69,15 @@ initial_guess = (18, 1 / 850)
 
 try:
     popt, _ = opt.curve_fit(prd.P_g_fun, x1, f1(
-        x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]), method='dogbox')
+        x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]),
+        method='dogbox')
 
 except RuntimeError:
     print("Error - curve_fit failed")
 
 ϕ_g0 = prd.P_g_fun(x3, popt[0], popt[1])
 ϕ_gi = prd.P_g_fun(x3, *initial_guess)
+
 ##############################################################################
 # Plot some figures
 ##############################################################################
