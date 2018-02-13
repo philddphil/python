@@ -280,13 +280,16 @@ while True:
         # (see 'values' in DISP case)
         # 'last_Ps and current_Ps' come from previously executed BOTHP cases
         print('SWEEP')
-        loop_out, values = prd.sweep(values, Ps_current, variables)
+        data_in = [float(i1)
+                   for i1 in re.findall(r'[-+]?\d+[\.]?\d*', str(cmnd))]
+        print('Data in = ', data_in)
+        param = data_in[0]
+        loop_out, values = prd.sweep(values, Ps_current, variables, param)
         if loop_out == 1:
             opt_val = prd.sweep_fit()
-            print(opt_val)
-            values[8] = opt_val
-            
-        data_in = str(cmnd)
+            print('optimum = ', opt_val)
+            values[int(param)] = opt_val
+
         data_out = (str(round(loop_out, 6))).zfill(10)
         current_hol = np.array(values)
 

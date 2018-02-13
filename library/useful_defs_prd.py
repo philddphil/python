@@ -248,36 +248,36 @@ def overshoot_phase(H1, g_OSlw, g_OSup, g_min, g_max):
 
 # Upack values from Hologram control sent by LabVIEW ##########################
 def variable_unpack(LabVIEW_data):
-    LCOS_δx = LabVIEW_data[0]
-    LCOS_δy = LabVIEW_data[1]
+    Λ = LabVIEW_data[0]
+    φ = LabVIEW_data[1]
 
-    Hδx = LabVIEW_data[2]
-    Hol_δy = LabVIEW_data[3]
-    Hol_cx = LabVIEW_data[4]
-    Hol_cy = LabVIEW_data[5]
+    L_δx = LabVIEW_data[2]
+    L_δy = LabVIEW_data[3]
 
-    ϕ_min = LabVIEW_data[6]
-    ϕ_max = LabVIEW_data[7]
-    ϕ_lwlim = LabVIEW_data[8]
-    ϕ_uplim = LabVIEW_data[9]
+    H_δx = LabVIEW_data[4]
+    H_δy = LabVIEW_data[5]
+    H_cx = LabVIEW_data[6]
+    H_cy = LabVIEW_data[7]
 
-    g_OSlw = LabVIEW_data[10]
-    g_OSup = LabVIEW_data[11]
+    ϕ_min = LabVIEW_data[8]
+    ϕ_max = LabVIEW_data[9]
+    ϕ_lw = LabVIEW_data[10]
+    ϕ_up = LabVIEW_data[11]
+
     g_min = LabVIEW_data[12]
     g_max = LabVIEW_data[13]
+    g_lw = LabVIEW_data[14]
+    g_up = LabVIEW_data[15]
 
-    Λ = LabVIEW_data[14]
-    φ = LabVIEW_data[15]
     offset = LabVIEW_data[16]
-
     sin_amp = LabVIEW_data[17]
     sin_off = LabVIEW_data[18]
 
-    params = [LCOS_δx, LCOS_δy,
-              Hδx, Hol_δy, Hol_cx, Hol_cy,
-              ϕ_min, ϕ_max, ϕ_lwlim, ϕ_uplim,
-              g_OSlw, g_OSup, g_min, g_max,
-              Λ, φ, offset, sin_amp, sin_off]
+    params = [Λ, φ, L_δx, L_δy,
+              H_δx, H_δy, H_cx, H_cy,
+              ϕ_min, ϕ_max, ϕ_lw, ϕ_up,
+              g_min, g_max, g_lw, g_up,
+              offset, sin_amp, sin_off]
     return params
 
 
@@ -285,25 +285,25 @@ def variable_unpack(LabVIEW_data):
 def holo_gen(*LabVIEW_data):
     # Unpack parameters
     # cs = palette()
+    Λ = LabVIEW_data[0]
+    φ = (np.pi / 180) * LabVIEW_data[1]
 
-    LCOS_δx = LabVIEW_data[0]
-    LCOS_δy = LabVIEW_data[1]
+    L_δx = LabVIEW_data[2]
+    L_δy = LabVIEW_data[3]
 
-    H_δx = LabVIEW_data[2]
-    H_δy = LabVIEW_data[3]
-    H_cx = LabVIEW_data[4]
-    H_cy = LabVIEW_data[5]
+    H_δx = LabVIEW_data[4]
+    H_δy = LabVIEW_data[5]
+    H_cx = LabVIEW_data[6]
+    H_cy = LabVIEW_data[7]
 
-    ϕ_lw = np.pi * LabVIEW_data[8]
-    ϕ_up = np.pi * LabVIEW_data[9]
+    ϕ_lw = np.pi * LabVIEW_data[10]
+    ϕ_up = np.pi * LabVIEW_data[11]
 
-    g_OSlw = LabVIEW_data[10]
-    g_OSup = LabVIEW_data[11]
     g_min = LabVIEW_data[12]
     g_max = LabVIEW_data[13]
+    g_lw = LabVIEW_data[14]
+    g_up = LabVIEW_data[15]
 
-    Λ = LabVIEW_data[14]
-    φ = (np.pi / 180) * LabVIEW_data[15]
     offset = LabVIEW_data[16]
 
     sin_amp = LabVIEW_data[17]
@@ -314,7 +314,7 @@ def holo_gen(*LabVIEW_data):
     g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
     ϕ_max = ϕ_g[-1]
     # Define holo params
-    LCOS_δyx = (LCOS_δy, LCOS_δx)
+    L_δyx = (L_δy, L_δx)
     H_δyx = (H_δy, H_δx)
     H_cyx = (H_cy, H_cx)
     ϕ_lims = (ϕ_lw, ϕ_up)
@@ -341,7 +341,7 @@ def holo_gen(*LabVIEW_data):
     g_ϕ1 = interp1d(ϕ1, gs0)
     H1 = remap_phase(Z_mod, g_ϕ1)
     # Calculate full holograms (Holo_f)
-    H2 = add_holo_LCOS(*H_cyx, H1, *LCOS_δyx)
+    H2 = add_holo_LCOS(*H_cyx, H1, *L_δyx)
 
     # Save output
     save_bmp(H2, r"..\..\Data\bmps\hologram")
@@ -497,13 +497,33 @@ def add_holo_LCOS(H_cy, H_cx, Z_mod, LCOSy, LCOSx):
     b0 = np.array([0, 255])
     Holo_f = np.tile(b0, (LCOSy, int(LCOSx / len(b0))))
     # Holo_f = np.zeros((LCOSy,LCOSx))
+    dy1 = 0
+    dy2 = 0
+    dx1 = 0
+    dx2 = 0
 
     (H_δy, H_δx) = np.shape(Z_mod)
     y1 = np.int(H_cy - np.floor(H_δy / 2))
+    if y1 < 0:
+        dy1 = -1 * y1
+        y1 = 0
+
     y2 = np.int(H_cy + np.ceil(H_δy / 2))
+    if y2 > LCOSy:
+        dy2 = y2 - LCOSy
+        y2 = LCOSy
+
     x1 = np.int(H_cx - np.floor(H_δx / 2))
+    if x1 < 0:
+        dx1 = -1 * x1
+        x1 = 0
     x2 = np.int(H_cx + np.ceil(H_δx / 2))
-    Holo_f[y1:y2, x1:x2] = Z_mod
+    if x2 > LCOSx:
+        dx2 = x2 - LCOSx
+        x2 = LCOSx
+
+    Holo_f[y1:y2, x1:x2] = Z_mod[dy1:H_δy - dy2, dx1:H_δx - dx2]
+
     return Holo_f
 
 
@@ -587,14 +607,14 @@ def locate_beam(values, last_CT400, current_CT400, axis):
 
     # Specify axis (x/y)
     if axis == 0:
-        LCOS_d_val = 1
-        Hol_c_val = 5
-        Hol_d_val = 3
+        LCOS_d_val = 3
+        Hol_c_val = 7
+        Hol_d_val = 5
 
     elif axis == 1:
-        LCOS_d_val = 0
-        Hol_c_val = 4
-        Hol_d_val = 2
+        LCOS_d_val = 2
+        Hol_c_val = 6
+        Hol_d_val = 4
 
     # Start search
     start = 0.5
@@ -910,7 +930,7 @@ def anneal_H3(values, Ps_current, variables):
 
 
 # Sweep parameters and select optimal value ##################################
-def sweep(values, Ps_current, variables):
+def sweep(values, Ps_current, variables, param=0):
     i0_p = r'..\..\Data\Python loops\Swept i0.txt'
     MF_p = r'..\..\Data\Python loops\Swept MF.txt'
     XT_p = r'..\..\Data\Python loops\Swept XT.txt'
@@ -924,44 +944,57 @@ def sweep(values, Ps_current, variables):
     MF_current = merit(Ps_current)
     i0 = np.genfromtxt(i0_p, dtype='int')
     rng = np.genfromtxt(param_swp_p)
-    param_2_swp = int(8)
+    param_2_swp = int(param)
 
-    print(i0)
-    print(rng)
+    print('sweep pt - ', i0)
 
     if i0 == 0:
+        Λ_rng = (values[0] - 0.5, values[0] + 0.5)
+        φ_rng = (values[1] - 1, values[1] + 1)
+        H_δx_rng = []
+        H_δy_rng = []
+        H_cx_rng = []
+        H_cy_rng = []
 
-        ϕ_lwlim_rng = (max(values[6], 0.9 * values[8]),
-                       min(values[7], 1.1 * values[8]))
-        ϕ_uplim_rng = (values[9] - 0.1, min(values[7], values[9] + 0.1))
-        g_OSlw_rng = (values[12], values[12] + 1)
-        g_OSup_rng = (values[13] - 1, values[13])
-        g_min_rng = (0, values[10])
-        g_max_rng = (values[11], 255)
-        Λ_rng = (values[14] - 0.1, values[14] + 0.1)
-        φ_rng = (values[15] - 0.2, values[15] + 0.2)
-        offset_rng = (0, values[14])
+        ϕ_lw_rng = (max(values[8], 0.9 * values[10]),
+                    min(values[9], 1.1 * values[10]))
+        ϕ_up_rng = (max(values[8], 0.9 * values[11]),
+                    min(values[9], 1.1 * values[11]))
+
+        g_min_rng = (max(0, values[12] - 10),
+                     min(255, values[12] + 10))
+        g_max_rng = (max(0, values[13] - 10),
+                     min(255, values[13] + 10))
+
+        g_lw_rng = (max(0, values[14] - 10),
+                    min(255, values[14] + 10))
+        g_up_rng = (max(0, values[15] - 10),
+                    min(255, values[15] + 10))
+
+        offset_rng = (0, values[14] / 5)
         sin_amp_rng = (0, 0.2)
-        sin_off_rng = (0, values[14])
-
-        all_params = [8, 9,
-                      10, 11,
-                      12, 13,
-                      14, 15,
-                      16,
-                      17, 18]
-
-        all_rngs = [ϕ_lwlim_rng, ϕ_uplim_rng,
-                    g_OSlw_rng, g_OSup_rng,
-                    g_min_rng, g_max_rng,
-                    Λ_rng, φ_rng,
+        sin_off_rng = (0, values[14] / 5)
+        all_rngs = [Λ_rng,
+                    φ_rng,
+                    0,
+                    0,
+                    H_δx_rng,
+                    H_δy_rng,
+                    H_cx_rng,
+                    H_cy_rng,
+                    0,
+                    0,
+                    ϕ_lw_rng,
+                    ϕ_up_rng,
+                    g_min_rng,
+                    g_max_rng,
+                    g_lw_rng,
+                    g_up_rng,
                     offset_rng,
-                    sin_amp_rng, sin_off_rng]
-
-        param_2_swp = int(8)
-        rng_2_swp = [ϕ_lwlim_rng[0], ϕ_lwlim_rng[1]]
+                    sin_amp_rng,
+                    sin_off_rng]
+        rng_2_swp = all_rngs[param_2_swp]
         rng = np.linspace(rng_2_swp[0], rng_2_swp[1], pts)
-        print(rng)
         np.savetxt(param_swp_p, rng, delimiter=',')
         new_value = rng[i0]
         values[param_2_swp] = new_value
