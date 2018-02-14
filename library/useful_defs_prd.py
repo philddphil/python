@@ -264,10 +264,10 @@ def variable_unpack(LabVIEW_data):
     ϕ_lw = LabVIEW_data[10]
     ϕ_up = LabVIEW_data[11]
 
-    g_min = LabVIEW_data[12]
-    g_max = LabVIEW_data[13]
-    g_lw = LabVIEW_data[14]
-    g_up = LabVIEW_data[15]
+    os_lw = LabVIEW_data[12]
+    os_up = LabVIEW_data[13]
+    osw_lw = LabVIEW_data[14]
+    osw_up = LabVIEW_data[15]
 
     offset = LabVIEW_data[16]
     sin_amp = LabVIEW_data[17]
@@ -276,7 +276,7 @@ def variable_unpack(LabVIEW_data):
     params = [Λ, φ, L_δx, L_δy,
               H_δx, H_δy, H_cx, H_cy,
               ϕ_min, ϕ_max, ϕ_lw, ϕ_up,
-              g_min, g_max, g_lw, g_up,
+              os_lw, os_up, osw_lw, osw_up,
               offset, sin_amp, sin_off]
     return params
 
@@ -299,10 +299,10 @@ def holo_gen(*LabVIEW_data):
     ϕ_lw = np.pi * LabVIEW_data[10]
     ϕ_up = np.pi * LabVIEW_data[11]
 
-    g_min = LabVIEW_data[12]
-    g_max = LabVIEW_data[13]
-    g_lw = LabVIEW_data[14]
-    g_up = LabVIEW_data[15]
+    os_lw = np.pi * LabVIEW_data[12]
+    os_up = np.pi * LabVIEW_data[13]
+    osw_lw = LabVIEW_data[14]
+    osw_up = LabVIEW_data[15]
 
     offset = LabVIEW_data[16]
 
@@ -329,16 +329,23 @@ def holo_gen(*LabVIEW_data):
 
     ϕ1 = np.linspace(0, ϕ_max, 256)
     gs0 = g_ϕ(ϕ1)
+    gs1 = copy.copy(gs0)
+    gs2 = copy.copy(gs0)
 
-    g_ind1 = gs0 < g_ϕ(ϕ_lw + 0.1)
-    g_ind2 = gs0 > g_ϕ(ϕ_up - 0.5)
+    g_ind1 = gs0 < g_ϕ(ϕ_lw + os_lw)
+    g_ind2 = gs0 > g_ϕ(ϕ_up - os_up)
 
-    gs0[g_ind1] = g_min
-    gs0[g_ind2] = g_max
+    gs1[g_ind1] = 0
+    gs2[g_ind2] = 255
 
-    gs0 = n_G_blurs(gs0, 0.5)
+    gs1 = n_G_blurs(gs1, osw_lw)
+    gs2 = n_G_blurs(gs2, osw_up)
+    g_mid = int(g_ϕ((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
 
-    g_ϕ1 = interp1d(ϕ1, gs0)
+    gs3 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
+
+    g_ϕ1 = interp1d(ϕ1, gs3)
+
     H1 = remap_phase(Z_mod, g_ϕ1)
     # Calculate full holograms (Holo_f)
     H2 = add_holo_LCOS(*H_cyx, H1, *L_δyx)
@@ -351,9 +358,9 @@ def holo_gen(*LabVIEW_data):
     Z2_0 = phase_sin(Λ, np.pi / 2, *H_δyx, *ϕ_lims, offset, sin_amp, sin_off)
     Z2_0_mod = phase_mod(Z2_0 + Z1_0, *ϕ_lims)
     Z1_0_mod = phase_mod(Z1_0, *ϕ_lims)
-    h1_0 = remap_phase(Z1_0_mod, g_ϕ1)[:, 0]
-    h2_0 = remap_phase(Z2_0_mod, g_ϕ1)[:, 0]
-    h3_0 = remap_phase(Z2_0_mod, g_ϕ)[:, 0]
+    h1_0 = remap_phase(Z1_0_mod, g_ϕ1)[:, 5]
+    h2_0 = remap_phase(Z2_0_mod, g_ϕ1)[:, 5]
+    h3_0 = remap_phase(Z2_0_mod, g_ϕ)[:, 5]
 
     np.savetxt(r'..\..\Data\Calibration files\greyprofile1.csv',
                h1_0, delimiter=',')
