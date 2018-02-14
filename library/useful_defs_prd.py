@@ -951,10 +951,14 @@ def sweep(values, Ps_current, variables, param=0):
     if i0 == 0:
         Λ_rng = (values[0] - 0.5, values[0] + 0.5)
         φ_rng = (values[1] - 1, values[1] + 1)
-        H_δx_rng = []
-        H_δy_rng = []
-        H_cx_rng = []
-        H_cy_rng = []
+        H_δx_rng = (max(0, values[4] - 10),
+                    min(values[2], values[4] + 10))
+        H_δy_rng = (max(0, values[5] - 10),
+                    min(values[3], values[5] + 10))
+        H_cx_rng = (max(0, values[6] - 10),
+                    min(values[2], values[6] + 10))
+        H_cy_rng = (max(0, values[7] - 10),
+                    min(values[3], values[7] + 10))
 
         ϕ_lw_rng = (max(values[8], 0.9 * values[10]),
                     min(values[9], 1.1 * values[10]))
@@ -1082,11 +1086,12 @@ def sweep_fit():
                                 p0=initial_guess,
                                 bounds=([-np.inf, -np.inf, -np.inf, -np.inf],
                                         [np.inf, np.inf, np.inf, np.inf]))
-
+        fit_success = 1
     except RuntimeError:
         print("Error - curve_fit failed")
         popt = [0, np.mean(v), 0]
-    return popt[1]
+        fit_success = 0
+    return fit_success, popt[1]
 
 
 ###############################################################################

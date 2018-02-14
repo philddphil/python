@@ -286,9 +286,13 @@ while True:
         param = data_in[0]
         loop_out, values = prd.sweep(values, Ps_current, variables, param)
         if loop_out == 1:
-            opt_val = prd.sweep_fit()
-            print('optimum = ', opt_val)
-            values[int(param)] = opt_val
+            fit_outcome, opt_val = prd.sweep_fit()
+            if fit_outcome == 1:
+                print('Success! Optimum = ', opt_val)
+                values[int(param)] = opt_val
+            else:
+                print('Failed fit :( Value set to mean = ', opt_val)
+                values[int(param)] = opt_val
 
         data_out = (str(round(loop_out, 6))).zfill(10)
         current_hol = np.array(values)
