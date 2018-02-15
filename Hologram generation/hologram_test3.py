@@ -53,8 +53,10 @@ H_δy = 40
 ϕ_lw = 0.5 * π
 ϕ_up = 2.5 * π
 off = 0
-g_OSlw = 0
-g_OSup = 255
+os_lw = 0.1 * π
+os_up = 0.2 * π
+osw_lw = 15
+osw_up = 3
 g_min = 0
 g_max = 255
 
@@ -94,15 +96,21 @@ g_ϕ0 = interp1d(ϕ_g, np.linspace(0, 255, 256))
 
 gs0 = g_ϕ0(ϕ1)
 
-g_ind1 = gs0 < g_ϕ(ϕ_lw + 0.1)
-g_ind2 = gs0 > g_ϕ(ϕ_up - 0.5)
+g_ind1 = gs0 < g_ϕ(ϕ_lw + os_lw)
+g_ind2 = gs0 > g_ϕ(ϕ_up - os_up)
 
-gs0[g_ind1] = 0
-gs0[g_ind2] = g_max
+gs1 = copy.copy(gs0)
+gs2 = copy.copy(gs0)
+gs1[g_ind1] = 0
+gs2[g_ind2] = 255
 
-gs0 = prd.n_G_blurs(gs0, 0.5)
+gs1 = prd.n_G_blurs(gs1, osw_lw)
+gs2 = prd.n_G_blurs(gs2, osw_up)
+g_mid = int(g_ϕ0((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
 
-g_ϕ1 = interp1d(ϕ1, gs0)
+gs3 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
+
+g_ϕ1 = interp1d(ϕ1, gs3)
 
 Z12_mod = prd.phase_mod(Z1 + Z2, ϕ_lw, ϕ_up)
 H1 = prd.remap_phase(Z1_mod, g_ϕ)
@@ -159,8 +167,12 @@ fig3.patch.set_facecolor(cs['mdk_dgrey'])
 ax3.set_ylabel('y axis - greylevel')
 ax3.set_xlabel('x axis - phase ϕ')
 
-l5 = plt.plot(ϕ1 / π, g_ϕ(ϕ1), '.')
-l6 = plt.plot(ϕ1 / π, g_ϕ1(ϕ1), '.')
+l5 = plt.plot(ϕ1 / π, gs0, '.')
+
+l5 = plt.plot(ϕ1 / π, gs1, '.')
+l5 = plt.plot(ϕ1 / π, gs2, '.')
+l5 = plt.plot(ϕ1 / π, gs3, '.')
+# l6 = plt.plot(ϕ1 / π, g_ϕ1(ϕ1), '.')
 
 
 # l6 = plt.plot(ϕ1 / π, g_ϕ3(ϕ1))
