@@ -283,23 +283,8 @@ while True:
         data_in = [float(i1)
                    for i1 in re.findall(r'[-+]?\d+[\.]?\d*', str(cmnd))]
         print('Data in = ', data_in)
-        param = data_in[0]
-        loop_out, values = prd.sweep(values, Ps_current, variables, param)
-        if loop_out == 1:
-            fit_outcome, opt_val = prd.sweep_fit()
-            if fit_outcome == 1:
-                print('Success! Optimum = ', opt_val)
-                values[int(param)] = opt_val
-            else:
-                print('Failed fit :( Value set to mean = ', opt_val)
-                values[int(param)] = opt_val
 
-        data_out = (str(round(loop_out, 6))).zfill(10)
-        current_hol = np.array(values)
-
-        for i1 in np.ndenumerate(current_hol[0:]):
-            elem = (str(round(i1[1], 6))).zfill(10)
-            data_out = data_out + ',' + elem
+        data_out = prd.sweep_multi(data_in, values, Ps_current, variables)
 
         conn.sendall(bytes(str(data_out), 'utf-8'))
 

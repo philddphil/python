@@ -938,7 +938,7 @@ def anneal_H3(values, Ps_current, variables):
 
 # Sweep parameters and select optimal value ##################################
 def sweep(values, Ps_current, variables, param=0):
-    i0_p = r'..\..\Data\Python loops\Swept i0.txt'
+    i1_p = r'..\..\Data\Python loops\Swept i1.txt'
     MF_p = r'..\..\Data\Python loops\Swept MF.txt'
     XT_p = r'..\..\Data\Python loops\Swept XT.txt'
     IL_p = r'..\..\Data\Python loops\Swept IL.txt'
@@ -946,18 +946,18 @@ def sweep(values, Ps_current, variables, param=0):
     H_swp_p = r'..\..\Data\Python loops\Sweep H.txt'
     param_swp_p = r'..\..\Data\Python loops\Swept param.txt'
 
-    pts = 20
+    pts = 5
 
     MF_current = merit(Ps_current)
-    i0 = np.genfromtxt(i0_p, dtype='int')
+    i1 = np.genfromtxt(i1_p, dtype='int')
     rng = np.genfromtxt(param_swp_p)
     param_2_swp = int(param)
 
-    print('sweep pt - ', i0)
+    print('sweep pt - ', i1)
 
-    if i0 == 0:
+    if i1 == 0:
         Λ_rng = (values[0] - 0.5, values[0] + 0.5)
-        φ_rng = (values[1] - 1, values[1] + 1)
+        φ_rng = (values[1] - 0.3, values[1] + 0.3)
         H_δx_rng = (max(0, values[4] - 10),
                     min(values[2], values[4] + 10))
         H_δy_rng = (max(0, values[5] - 10),
@@ -967,20 +967,15 @@ def sweep(values, Ps_current, variables, param=0):
         H_cy_rng = (max(0, values[7] - 10),
                     min(values[3], values[7] + 10))
 
-        ϕ_lw_rng = (max(values[8], 0.9 * values[10]),
-                    min(values[9], 1.1 * values[10]))
+        ϕ_lw_rng = (max(values[8], values[10] - 0.2),
+                    min(values[9], values[10] + 0.2))
         ϕ_up_rng = (max(values[8], 0.9 * values[11]),
                     min(values[9], 1.1 * values[11]))
 
-        g_min_rng = (max(0, values[12] - 10),
-                     min(255, values[12] + 10))
-        g_max_rng = (max(0, values[13] - 10),
-                     min(255, values[13] + 10))
-
-        g_lw_rng = (max(0, values[14] - 10),
-                    min(255, values[14] + 10))
-        g_up_rng = (max(0, values[15] - 10),
-                    min(255, values[15] + 10))
+        os_lw_rng = (0, 0.1)
+        os_up_rng = (0, 0.1)
+        osw_lw_rng = (0, 10)
+        osw_up_rng = (0, 10)
 
         offset_rng = (0, values[14] / 5)
         sin_amp_rng = (0, 0.2)
@@ -997,23 +992,23 @@ def sweep(values, Ps_current, variables, param=0):
                     0,
                     ϕ_lw_rng,
                     ϕ_up_rng,
-                    g_min_rng,
-                    g_max_rng,
-                    g_lw_rng,
-                    g_up_rng,
+                    os_lw_rng,
+                    os_up_rng,
+                    osw_lw_rng,
+                    osw_up_rng,
                     offset_rng,
                     sin_amp_rng,
                     sin_off_rng]
         rng_2_swp = all_rngs[param_2_swp]
         rng = np.linspace(rng_2_swp[0], rng_2_swp[1], pts)
         np.savetxt(param_swp_p, rng, delimiter=',')
-        new_value = rng[i0]
+        new_value = rng[i1]
         values[param_2_swp] = new_value
         np.savetxt(H_swp_p, values, delimiter=",",
                    header='see code structure for variable names')
         holo_gen(*values)
 
-    elif i0 == pts:
+    elif i1 == pts:
         MF_str = str(MF_current)
         f1 = open(MF_p, 'a')
         f1.write(MF_str)
@@ -1026,12 +1021,12 @@ def sweep(values, Ps_current, variables, param=0):
         f3 = open(IL_p, 'a')
         f3.write(IL_str)
         f3.close()
-        Rng_str = str(rng[i0 - 1])
+        Rng_str = str(rng[i1 - 1])
         f4 = open(Rng_p, 'a')
         f4.write(Rng_str)
         f4.close()
     else:
-        new_value = rng[i0]
+        new_value = rng[i1]
         values[param_2_swp] = new_value
         print('New value is', new_value)
         MF_str = str(MF_current) + ','
@@ -1046,7 +1041,7 @@ def sweep(values, Ps_current, variables, param=0):
         f3 = open(IL_p, 'a')
         f3.write(IL_str)
         f3.close()
-        Rng_str = str(rng[i0 - 1]) + ','
+        Rng_str = str(rng[i1 - 1]) + ','
         f4 = open(Rng_p, 'a')
         f4.write(Rng_str)
         f4.close()
@@ -1055,16 +1050,16 @@ def sweep(values, Ps_current, variables, param=0):
         holo_gen(*values)
 
     # Termination statement. Search proceeds whilst i1 <= 8
-    if i0 == pts:
+    if i1 == pts:
         loop_out = 1
         print('End sweep')
     else:
         loop_out = 0
         print('Carry on')
 
-    i0 = i0 + 1
-    f0 = open(i0_p, 'w')
-    f0.write(str(i0))
+    i1 = i1 + 1
+    f0 = open(i1_p, 'w')
+    f0.write(str(i1))
     f0.close()
     return loop_out, values
 
@@ -1096,15 +1091,51 @@ def sweep_fit():
         fit_success = 1
     except RuntimeError:
         print("Error - curve_fit failed")
-        popt = [0, np.mean(v), 0]
+        popt = [0, v[np.where(MF == max(MF))], 0]
         fit_success = 0
     return fit_success, popt[1]
 
+
+def sweep_multi(data_in, values, Ps_current, variables):
+    i0_p = r'..\..\Data\Python loops\Swept i0.txt'
+    f1 = open(i0_p, 'r')
+    i0 = f1.read()
+    f1.close()
+    print(i0)
+    params_p = r'..\..\Data\Python loops\Param list.txt'
+
+    np.savetxt(params_p, data_in, delimiter=',')
+    param = data_in[0]
+    p_sweep = len(data_in)
+    print(type(i0), type(p_sweep))
+    loop_out, values = sweep(values, Ps_current, variables, param)
+    if loop_out == 1 and i0 < p_sweep:
+        fit_outcome, opt_val = sweep_fit()
+        if fit_outcome == 1:
+            print('Success! Optimum = ', opt_val)
+            values[int(param)] = opt_val
+        else:
+            print('Failed fit :( Value set to mean = ', opt_val)
+            values[int(param)] = opt_val
+    else:
+        i0 = i0 + 1
+        f1 = open(i0_p, 'w')
+        f1.write(str(i0))
+        f1.close()
+    data_out = (str(round(loop_out, 6))).zfill(10)
+    current_hol = np.array(values)
+
+    for i1 in np.ndenumerate(current_hol[0:]):
+        elem = (str(round(i1[1], 6))).zfill(10)
+        data_out = data_out + ',' + elem
+    return data_out
 
 ###############################################################################
 # Maths defs
 ###############################################################################
 # Generic 1D Gaussian function ################################################
+
+
 def Gaussian_1D(x, A, x_c, σ_x, bkg=0, N=1):
     x_c = float(x_c)
     g = bkg + A * np.exp(- (((x - x_c) ** 2) / (2 * σ_x ** 2))**N)
