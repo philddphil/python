@@ -946,14 +946,14 @@ def sweep(values, Ps_current, variables, param=0):
     H_swp_p = r'..\..\Data\Python loops\Sweep H.txt'
     param_swp_p = r'..\..\Data\Python loops\Swept param.txt'
 
-    pts = 5
+    pts = 10
 
     MF_current = merit(Ps_current)
     i1 = np.genfromtxt(i1_p, dtype='int')
     rng = np.genfromtxt(param_swp_p)
     param_2_swp = int(param)
 
-    print('sweep pt - ', i1)
+    print('i1 - ', i1)
 
     if i1 == 0:
         Λ_rng = (values[0] - 0.5, values[0] + 0.5)
@@ -977,7 +977,7 @@ def sweep(values, Ps_current, variables, param=0):
         osw_lw_rng = (0, 10)
         osw_up_rng = (0, 10)
 
-        offset_rng = (0, values[14] / 5)
+        offset_rng = (0, 0.2)
         sin_amp_rng = (0, 0.2)
         sin_off_rng = (0, values[14] / 5)
         all_rngs = [Λ_rng,
@@ -1082,32 +1082,48 @@ def sweep_fit():
     MF = np.genfromtxt(p1 + f3, delimiter=',')
     v = np.genfromtxt(p1 + f5, delimiter=',')
 
-    initial_guess = (10, np.mean(v), 0.05, -45)
+    initial_guess = (10, np.mean(v), np.max(v) - np.min(v), -45)
     try:
         popt, _ = opt.curve_fit(Gaussian_1D, v, MF,
                                 p0=initial_guess,
-                                bounds=([-np.inf, -np.inf, -np.inf, -np.inf],
-                                        [np.inf, np.inf, np.inf, np.inf]))
+                                bounds=([0, min(v), -np.inf, -np.inf],
+                                        [np.inf, max(v), np.inf, np.inf]))
         fit_success = 1
+        plt.plot(v, MF, '.')
+        plt.plot(v, Gaussian_1D(v, *popt))
     except RuntimeError:
         print("Error - curve_fit failed")
         popt = [0, v[np.where(MF == max(MF))], 0]
+        plt.plot(v, MF, '.')
+
         fit_success = 0
+    title_str = 'value taken = ' + str(np.round(popt[1], 2))
+    plt.plot(v, Gaussian_1D(v, *initial_guess))
+    plt.title(title_str)
+    plt.show()
     return fit_success, popt[1]
 
 
 def sweep_multi(data_in, values, Ps_current, variables):
     i0_p = r'..\..\Data\Python loops\Swept i0.txt'
+    i1_p = r'..\..\Data\Python loops\Swept i1.txt'
+    MF_p = r'..\..\Data\Python loops\Swept MF.txt'
+    XT_p = r'..\..\Data\Python loops\Swept XT.txt'
+    IL_p = r'..\..\Data\Python loops\Swept IL.txt'
+    Rng_p = r'..\..\Data\Python loops\Swept Rng.txt'
+    H_swp_p = r'..\..\Data\Python loops\Sweep H.txt'
+    param_swp_p = r'..\..\Data\Python loops\Swept param.txt'
+
     f1 = open(i0_p, 'r')
-    i0 = f1.read()
+    i0 = int(f1.read())
     f1.close()
-    print(i0)
+
     params_p = r'..\..\Data\Python loops\Param list.txt'
 
     np.savetxt(params_p, data_in, delimiter=',')
-    param = data_in[0]
+    param = data_in[i0]
     p_sweep = len(data_in)
-    print(type(i0), type(p_sweep))
+    print('i0 - ', i0, 'p_sweep -', p_sweep)
     loop_out, values = sweep(values, Ps_current, variables, param)
     if loop_out == 1 and i0 < p_sweep:
         fit_outcome, opt_val = sweep_fit()
@@ -1117,18 +1133,44 @@ def sweep_multi(data_in, values, Ps_current, variables):
         else:
             print('Failed fit :( Value set to mean = ', opt_val)
             values[int(param)] = opt_val
-    else:
+
+        f1 = open(i1_p, 'w')
+        f1.write(str(0))
+        f1.close()
+        f1 = open(MF_p, 'w')
+        f1.write('')
+        f1.close()
+        f1 = open(XT_p, 'w')
+        f1.write('')
+        f1.close()
+        f1 = open(IL_p, 'w')
+        f1.write('')
+        f1.close()
+        f1 = open(Rng_p, 'w')
+        f1.write('')
+        f1.close()
+        f1 = open(H_swp_p, 'w')
+        f1.write('')
+        f1.close()
+        f1 = open(param_swp_p, 'w')
+        f1.write('')
+        f1.close()
+        print('cleared files')
         i0 = i0 + 1
         f1 = open(i0_p, 'w')
         f1.write(str(i0))
         f1.close()
+        loop_out = 0
+        if i0 == p_sweep:
+            loop_out = 1
+            print('ending parameter sweeps')
     data_out = (str(round(loop_out, 6))).zfill(10)
     current_hol = np.array(values)
 
     for i1 in np.ndenumerate(current_hol[0:]):
         elem = (str(round(i1[1], 6))).zfill(10)
         data_out = data_out + ',' + elem
-    return data_out
+    return loop_out, data_out
 
 ###############################################################################
 # Maths defs

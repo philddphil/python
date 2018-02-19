@@ -48,7 +48,6 @@ while True:
     elif 'DISP' in str(cmnd):
         # Display a hologram
         print('DISP')
-        # print(call_time)
         hol_data = str(cmnd)
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
@@ -282,10 +281,12 @@ while True:
         print('SWEEP')
         data_in = [float(i1)
                    for i1 in re.findall(r'[-+]?\d+[\.]?\d*', str(cmnd))]
-        print('Data in = ', data_in)
 
-        data_out = prd.sweep_multi(data_in, values, Ps_current, variables)
-
+        loop_out, data_out = prd.sweep_multi(
+            data_in, values, Ps_current, variables)
+        if loop_out == 1:
+            print ('sweep over')
+        print(data_out)
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'QUIT' in str(cmnd):
