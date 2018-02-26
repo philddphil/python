@@ -46,8 +46,8 @@ p1 = (r"C:\Users\Philip\Documents\Technical Stuff"
       r"\Hologram optimisation\Polynomial distortion")
 f1 = p1 + r'\Phase Ps.csv'
 f2 = p1 + r'\Phase greys.csv'
-Λ = 10
-φ = 0 * π / 4
+Λ = 10.6
+φ = 1 * π / 4
 H_δx = 40
 H_δy = 40
 ϕ_lw = 0.5 * π
@@ -158,20 +158,16 @@ ax2 = fig2.add_subplot(1, 1, 1)
 fig2.patch.set_facecolor(cs['mdk_dgrey'])
 ax2.set_ylabel('y axis - greylevel')
 ax2.set_xlabel('x axis - pixel')
-l3 = plt.plot(H1[0, :], '.:')
-l4 = plt.plot(H2[0, :], '.:')
+l3 = plt.plot(Z1_mod[0, :], '.:')
+
 
 fig3 = plt.figure('fig3', figsize=(4, 4))
 ax3 = fig3.add_subplot(1, 1, 1)
 fig3.patch.set_facecolor(cs['mdk_dgrey'])
-ax3.set_ylabel('y axis - greylevel')
-ax3.set_xlabel('x axis - phase ϕ')
+ax3.set_ylabel('y axis - px')
+ax3.set_xlabel('x axis - px')
 
-l5 = plt.plot(ϕ1 / π, gs0, '.')
-
-l5 = plt.plot(ϕ1 / π, gs1, '.')
-l5 = plt.plot(ϕ1 / π, gs2, '.')
-l5 = plt.plot(ϕ1 / π, gs3, '.')
+l5 = plt.imshow(Z1_mod)
 # l6 = plt.plot(ϕ1 / π, g_ϕ1(ϕ1), '.')
 
 
