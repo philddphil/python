@@ -8,6 +8,7 @@ import copy
 import random
 import io
 import csv
+import time
 
 import numpy as np
 import scipy as sp
@@ -321,17 +322,22 @@ def holo_gen(*LabVIEW_data):
     Holo_params = (Λ, φ, *H_δyx, *ϕ_lims, offset)
 
     # Calculate sub hologram (Holo_s)
+    # t1 = 1000 * time.time()
+    # print(int(t1))
     Z1 = phase_tilt(*Holo_params)
     Z2 = phase_sin(*Holo_params, sin_amp, sin_off)
     Z_mod = phase_mod(Z2 + Z1, *ϕ_lims)
-
+    # t2 = 1000 * time.time()
+    # print('generating subhologram = ', int(t2 - t1))
     # Remap phase with non linear ϕ map
-
+    print(ϕ_max)
     ϕ1 = np.linspace(0, ϕ_max, 256)
     gs0 = g_ϕ(ϕ1)
+    print(max(gs0), min(gs0))
     gs1 = copy.copy(gs0)
     gs2 = copy.copy(gs0)
-
+    print(np.round(g_ϕ(ϕ_lw + os_lw)))
+    print(np.round(g_ϕ(ϕ_up - os_up)))
     g_ind1 = gs0 < g_ϕ(ϕ_lw + os_lw)
     g_ind2 = gs0 > g_ϕ(ϕ_up - os_up)
 
@@ -351,8 +357,11 @@ def holo_gen(*LabVIEW_data):
     H2 = add_holo_LCOS(*H_cyx, H1, *L_δyx)
 
     # Save output
+    # t3 = 1000 * time.time()
+    # print('generating bitmap = ', int(t3 - t2))
     save_bmp(H2, r"..\..\Data\bmps\hologram")
-
+    # t4 = 1000 * time.time()
+    # print('saving bitmap =', int(t4 - t3))
     # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
     Z1_0 = phase_tilt(Λ, np.pi / 2, *H_δyx, *ϕ_lims, offset)
     Z2_0 = phase_sin(Λ, np.pi / 2, *H_δyx, *ϕ_lims, offset, sin_amp, sin_off)
@@ -368,7 +377,8 @@ def holo_gen(*LabVIEW_data):
                h2_0, delimiter=',')
     np.savetxt(r'..\..\Data\Calibration files\greyprofile3.csv',
                h3_0, delimiter=',')
-
+    # t5 = 1000 * time.time()
+    # print('total holo_gen time =', int(t5 - t1))
     return [H1]
 
 
@@ -401,9 +411,9 @@ def phase_sin(Λ, φ, H_δy, H_δx, ϕ_lwlim, ϕ_uplim, off, sin_amp, sin_off):
 
     # Calulate higher frequency sinsusoidal profile
     Z = sin_amp * np.sin((4 * np.pi / Λ) * (
-                         (X * np.cos(φ) + Y * np.sin(φ)) -
-                         sin_off -
-                         off))
+        (X * np.cos(φ) + Y * np.sin(φ)) -
+        sin_off -
+        off))
     return Z
 
 
@@ -972,14 +982,18 @@ def sweep(values, Ps_current, variables, param=0):
         ϕ_up_rng = (max(values[8], 0.9 * values[11]),
                     min(values[9], 1.1 * values[11]))
 
-        os_lw_rng = (0, 0.1)
-        os_up_rng = (0, 0.1)
-        osw_lw_rng = (0, 10)
-        osw_up_rng = (0, 10)
+        os_lw_rng = (max(-0.1, values[12] - 0.1),
+                     values[12] + 0.1)
+        os_up_rng = (max(-0.1, values[13] - 0.1),
+                     values[13] + 0.1)
+        osw_lw_rng = (max(0, values[14] - 4),
+                      min(values[14] + 4, 25))
+        osw_up_rng = (max(0, values[15] - 4),
+                      min(values[15] + 4, 25))
 
         offset_rng = (0, 0.2)
         sin_amp_rng = (0, 0.2)
-        sin_off_rng = (0, values[14] / 5)
+        sin_off_rng = (0, values[0] / 2)
         all_rngs = [Λ_rng,
                     φ_rng,
                     0,
@@ -1069,7 +1083,7 @@ def merit(Ps):
 
     IL = Ps[0]
     XT = Ps[0] - Ps[1]
-    MF = IL - (55 - XT)
+    MF = 5 * IL - (55 - XT)
     return MF
 
 
@@ -1082,25 +1096,28 @@ def sweep_fit():
     MF = np.genfromtxt(p1 + f3, delimiter=',')
     v = np.genfromtxt(p1 + f5, delimiter=',')
 
-    initial_guess = (10, np.mean(v), np.max(v) - np.min(v), -45)
+    initial_guess = (np.abs(max(MF) - min(MF)),
+                     np.mean(v),
+                     np.max(v) - np.min(v),
+                     min(MF) - np.abs(max(MF) - min(MF)))
     try:
         popt, _ = opt.curve_fit(Gaussian_1D, v, MF,
                                 p0=initial_guess,
                                 bounds=([0, min(v), -np.inf, -np.inf],
                                         [np.inf, max(v), np.inf, np.inf]))
         fit_success = 1
-        plt.plot(v, MF, '.')
-        plt.plot(v, Gaussian_1D(v, *popt))
+        # plt.plot(v, MF, '.')
+        # plt.plot(v, Gaussian_1D(v, *popt))
     except RuntimeError:
         print("Error - curve_fit failed")
         popt = [0, v[np.where(MF == max(MF))], 0]
-        plt.plot(v, MF, '.')
+        # plt.plot(v, MF, '.')
 
         fit_success = 0
-    title_str = 'value taken = ' + str(np.round(popt[1], 2))
-    plt.plot(v, Gaussian_1D(v, *initial_guess))
-    plt.title(title_str)
-    plt.show()
+    # title_str = 'value taken = ' + str(np.round(popt[1], 2))
+    # plt.plot(v, Gaussian_1D(v, *initial_guess))
+    # plt.title(title_str)
+    # plt.show()
     return fit_success, popt[1]
 
 
@@ -1123,16 +1140,19 @@ def sweep_multi(data_in, values, Ps_current, variables):
     np.savetxt(params_p, data_in, delimiter=',')
     param = data_in[i0]
     p_sweep = len(data_in)
-    print('i0 - ', i0, 'p_sweep -', p_sweep)
     loop_out, values = sweep(values, Ps_current, variables, param)
     if loop_out == 1 and i0 < p_sweep:
         fit_outcome, opt_val = sweep_fit()
         if fit_outcome == 1:
             print('Success! Optimum = ', opt_val)
             values[int(param)] = opt_val
+            if int(param) == 6 or int(param) == 7:
+                values[int(param)] = int(opt_val)
         else:
             print('Failed fit :( Value set to mean = ', opt_val)
             values[int(param)] = opt_val
+            if int(param) == 6 or int(param) == 7:
+                values[int(param)] = int(opt_val)
 
         f1 = open(i1_p, 'w')
         f1.write(str(0))
@@ -1168,7 +1188,7 @@ def sweep_multi(data_in, values, Ps_current, variables):
     current_hol = np.array(values)
 
     for i1 in np.ndenumerate(current_hol[0:]):
-        elem = (str(round(i1[1], 6))).zfill(10)
+        elem = (str(np.round(i1[1], 6))).zfill(10)
         data_out = data_out + ',' + elem
     return loop_out, data_out
 

@@ -48,6 +48,7 @@ while True:
     elif 'DISP' in str(cmnd):
         # Display a hologram
         print('DISP')
+        t1 = 1000 * time.time()
         hol_data = str(cmnd)
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
@@ -56,6 +57,8 @@ while True:
         hol_values = dict(zip(variables, values))
         H = prd.holo_gen(*LabVIEW_data)
         conn.sendall(b'PLAY-DONE')
+        t2 = 1000 * time.time()
+        print('display total time =', int(t2 - t1))
 
     elif 'FINDp' in str(cmnd):
         # Do the play action
@@ -286,7 +289,6 @@ while True:
             data_in, values, Ps_current, variables)
         if loop_out == 1:
             print ('sweep over')
-        print(data_out)
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'QUIT' in str(cmnd):
