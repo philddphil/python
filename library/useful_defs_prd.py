@@ -364,7 +364,7 @@ def holo_gen(*LabVIEW_data):
     # print('saving bitmap =', int(t4 - t3))
     # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
     Z1_0 = phase_tilt(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
-    Z2_0 = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, sin_amp, sin_off)
+    Z2_0 = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset, sin_amp, sin_off)
     Z2_0_mod = phase_mod(Z2_0 + Z1_0,  ϕ_lw, ϕ_up,)
     Z1_0_mod = phase_mod(Z1_0,  ϕ_lw, ϕ_up,)
     h1_0 = remap_phase(Z1_0_mod, g_ϕ1)[:, 5]
