@@ -315,10 +315,6 @@ def holo_gen(*LabVIEW_data):
     g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
     ϕ_max = ϕ_g[-1]
     # Define holo params
-    L_δyx = (L_δy, L_δx)
-    H_δyx = ()
-    H_cyx = (H_cy, H_cx)
-    ϕ_lims = ()
     Holo_params = (Λ, φ, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
 
     # Calculate sub hologram (Holo_s)
@@ -330,17 +326,14 @@ def holo_gen(*LabVIEW_data):
     # t2 = 1000 * time.time()
     # print('generating subhologram = ', int(t2 - t1))
     # Remap phase with non linear ϕ map
-    print(ϕ_max)
     ϕ1 = np.linspace(0, ϕ_max, 256)
     gs0 = g_ϕ(ϕ1)
-    print(max(gs0), min(gs0))
-    gs1 = copy.copy(gs0)
-    gs2 = copy.copy(gs0)
-    print(np.round(g_ϕ(ϕ_lw + os_lw)))
-    print(np.round(g_ϕ(ϕ_up - os_up)))
+
     g_ind1 = gs0 < g_ϕ(ϕ_lw + os_lw)
     g_ind2 = gs0 > g_ϕ(ϕ_up - os_up)
 
+    gs1 = copy.copy(gs0)
+    gs2 = copy.copy(gs0)
     gs1[g_ind1] = 0
     gs2[g_ind2] = 255
 

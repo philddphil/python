@@ -33,10 +33,12 @@
 #
 # ****************************** HOUSEKEEPING ****************************
 import numpy as np
-import math as m
 import sys
+import copy
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import scipy.optimize as opt
+from scipy.interpolate import interp1d
+
 
 ##############################################################################
 # Import some extra special libraries from my own repo
@@ -49,18 +51,13 @@ cs = prd.palette()
 # Define values
 ##############################################################################
 π = np.pi
-δx = 50
-δy = 50
-w = 30
-Λ = 10
-ϕ = 0 * π / 4
 px_edge = 1  # blurring of rect function - bigger = blurier
 px_pad = 8
-fft_pad = 8
+fft_pad = 4
 px = 6.4e-6
 λ = 1.55e-6
 f = 9.1e-3
-
+w = 30
 
 ##############################################################################
 # CODE STRUCTURE
@@ -76,16 +73,95 @@ f = 9.1e-3
 ##############################################################################
 # 1 - Generate Hologram
 ##############################################################################
-Z = prd.phase_tilt(Λ, ϕ, δx, δy)
-H = prd.phase_mod(Z)
+f0 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Algorithmic implementation\180227\Post realignment\Port 2\fibre2.csv")
+
+p0 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Replay field calculation")
+p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Replay field calculation\180302")
+
+f1 = p0 + r'\Phase Ps.csv'
+f2 = p0 + r'\Phase greys.csv'
+holo_data = np.genfromtxt(f0, delimiter=',')
+
+Λ = holo_data[0]
+φ = (np.pi / 180) * holo_data[1]
+H_δx = int(holo_data[4])
+H_δy = int(holo_data[5])
+H_δx = 50
+H_δy = 50
+
+ϕ_lw = π * holo_data[10]
+ϕ_up = π * holo_data[11]
+
+os_lw = π * holo_data[12]
+os_up = π * holo_data[13]
+osw_lw = holo_data[14]
+osw_up = holo_data[15]
+
+off = holo_data[16]
+
+Holo_params = (Λ, φ, H_δy, H_δx, ϕ_lw, ϕ_up, off)
+
+Z0 = prd.phase_tilt(*Holo_params)
+Z1 = prd.phase_mod(Z0, ϕ_lw, ϕ_up)
+
+holo_data = np.genfromtxt(f0, delimiter=',')
+print(holo_data)
+
+y_dB = np.genfromtxt(f1, delimiter=',')
+y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+
+x0 = np.genfromtxt(f2, delimiter=',')
+x1 = np.linspace(0, 255, 25)
+x3 = np.linspace(0, 255, 256)
+fun1 = interp1d(x0, y_lin)
+initial_guess = (15, 1 / 800)
+
+try:
+    popt, _ = opt.curve_fit(prd.P_g_fun, x1, fun1(
+        x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
+
+except RuntimeError:
+    print("Error - curve_fit failed")
+ϕ_A = popt[0]
+ϕ_B = popt[1]
+ϕ_g_lu = prd.ϕ_g_fun(x3, popt[0], popt[1])
+ϕ_max = ϕ_g_lu[-1]
+ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
+g_ϕ0 = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
+ϕ1 = np.linspace(0, ϕ_max, 256)
+gs0 = g_ϕ0(ϕ1)
+
+g_ind1 = gs0 < g_ϕ0(ϕ_lw + os_lw)
+g_ind2 = gs0 > g_ϕ0(ϕ_up - os_up)
+
+gs1 = copy.copy(gs0)
+gs2 = copy.copy(gs0)
+gs1[g_ind1] = 0
+gs2[g_ind2] = 255
+
+gs1 = prd.n_G_blurs(gs1, osw_lw)
+gs2 = prd.n_G_blurs(gs2, osw_up)
+g_mid = int(g_ϕ0((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
+
+gs3 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
+
+g_ϕ1 = interp1d(ϕ1, gs3)
+
+H1 = prd.remap_phase(Z1, g_ϕ1)
+
+Z2 = ϕ_g(H1)
 
 # Increase resolution
 # Increase calculation resolution by representing each pixel by px_pad**2
 # elements to give a total phase and amplitude field of LC x LC points
 
-LCx = np.shape(H)[0] * (2 * px_pad + 1)
-LCy = np.shape(H)[1] * (2 * px_pad + 1)
-LC_field = prd.Pad_A_elements(H, px_pad)
+LCx = np.shape(Z1)[0] * (2 * px_pad + 1)
+LCy = np.shape(Z1)[1] * (2 * px_pad + 1)
+LC_field_1 = prd.Pad_A_elements(Z1, px_pad)
+LC_field = prd.Pad_A_elements(Z2, px_pad)
 
 SLM_x = range(LCx)
 SLM_y = range(LCy)
@@ -122,39 +198,39 @@ phase_SLM_2 = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(phase_SLM_1)))
 # aside - plots (i)
 ##############################################################################
 
-fig3 = plt.figure('fig3')
-fig3.patch.set_facecolor(cs['mdk_dgrey'])
+# fig3 = plt.figure('fig3')
+# fig3.patch.set_facecolor(cs['mdk_dgrey'])
 
-ax3_1 = fig3.add_subplot(411)
-plt.plot(H[0, 0: 2 * Λ], 'o')
-plt.plot(np.linspace(0, 2 * Λ, 2 * Λ * (2 * px_pad + 1)) - 0.5,
-         phase_SLM_2[px_pad, 0: 2 * Λ * (2 * px_pad + 1)])
+# ax3_1 = fig3.add_subplot(411)
+# plt.plot(H[0, 0: 2 * Λ], 'o')
+# plt.plot(np.linspace(0, 2 * Λ, 2 * Λ * (2 * px_pad + 1)) - 0.5,
+#          phase_SLM_2[px_pad, 0: 2 * Λ * (2 * px_pad + 1)])
 
-ax3_3 = fig3.add_subplot(423)
-plt.plot(R0[LC_cy, LC_cx - 2 * px_pad - 1:LC_cx + 2 * px_pad + 2], 'o-')
-plt.plot([px_pad + 1, px_pad + 1], [1, 0], c=cs['ggblue'])
-plt.plot([3 * px_pad + 1, 3 * px_pad + 1], [1, 0], c=cs['ggblue'])
+# ax3_3 = fig3.add_subplot(423)
+# plt.plot(R0[LC_cy, LC_cx - 2 * px_pad - 1:LC_cx + 2 * px_pad + 2], 'o-')
+# plt.plot([px_pad + 1, px_pad + 1], [1, 0], c=cs['ggblue'])
+# plt.plot([3 * px_pad + 1, 3 * px_pad + 1], [1, 0], c=cs['ggblue'])
 
-ax3_4 = fig3.add_subplot(424)
-plt.imshow(R0[LC_cx - 2 * px_pad:LC_cx + 2 * px_pad + 1,
-              LC_cy - 2 * px_pad:LC_cy + 2 * px_pad + 1])
-ax3_4.add_patch(
-    patches.Rectangle((px_pad, px_pad),
-                      2 * px_pad, 2 * px_pad,
-                      fill=False, edgecolor=cs['ggred'], lw=2))
+# ax3_4 = fig3.add_subplot(424)
+# plt.imshow(R0[LC_cx - 2 * px_pad:LC_cx + 2 * px_pad + 1,
+#               LC_cy - 2 * px_pad:LC_cy + 2 * px_pad + 1])
+# ax3_4.add_patch(
+#     patches.Rectangle((px_pad, px_pad),
+#                       2 * px_pad, 2 * px_pad,
+#                       fill=False, edgecolor=cs['ggred'], lw=2))
 
-ax3_5 = fig3.add_subplot(425)
-plt.imshow(LC_field[0:Λ * 2 * px_pad + 1,
-                    0:Λ * 2 * px_pad + 1])
+# ax3_5 = fig3.add_subplot(425)
+# plt.imshow(LC_field[0:Λ * 2 * px_pad + 1,
+#                     0:Λ * 2 * px_pad + 1])
 
-ax3_6 = fig3.add_subplot(426)
-plt.imshow(abs(phase_SLM_2[0:Λ * 2 * px_pad + 1,
-                           0:Λ * 2 * px_pad + 1]))
+# ax3_6 = fig3.add_subplot(426)
+# plt.imshow(abs(phase_SLM_2[0:Λ * 2 * px_pad + 1,
+#                            0:Λ * 2 * px_pad + 1]))
 
-ax3_7 = fig3.add_subplot(414)
-plt.plot(np.linspace(0, δx, LCx), E_field[LC_cx, :])
+# ax3_7 = fig3.add_subplot(414)
+# plt.plot(np.linspace(0, H_δx, LCx), E_field[LC_cx, :])
 
-plt.tight_layout()
+# plt.tight_layout()
 
 
 ##############################################################################
@@ -218,11 +294,11 @@ I2_final_full = 10 * np.log10(I_replay)
 I2_final_full[I2_final_full < -60] = -60
 
 # Generate axis
-Ratio2 = np.shape(phase_SLM_2)[0] / np.shape(H)[0]
+Ratio2 = np.shape(phase_SLM_2)[0] / np.shape(Z1)[0]
 Ratio1 = np.shape(I_replay)[0] / np.shape(I2_final)[0]
 
-LCOS_x = δx * px
-LCOS_y = δy * px
+LCOS_x = H_δx * px
+LCOS_y = H_δy * px
 
 RePl_x = (f * λ) / (px / Ratio2)
 RePl_y = (f * λ) / (px / Ratio2)
@@ -241,11 +317,16 @@ FFT_y_ax = (1e6 / Ratio1) * np.linspace(-RePl_y / 2, RePl_y / 2,
 print('I_reply = ', np.shape(I_replay))
 print('I2_final = ', np.shape(I2_final))
 print('Ratio = ', np.shape(I_replay)[0] / np.shape(I2_final)[0])
-print('Ratio2 = ', np.shape(phase_SLM_2)[0] / np.shape(H)[0])
+print('Ratio2 = ', np.shape(phase_SLM_2)[0] / np.shape(Z1)[0])
 print('LCOS size = ', LCOS_x * 1e6)
 print('Replay Field size = ', RePl_x * 1e6)
 print('Replay Field plot size = ', RePl_x * 1e6 / Ratio1)
-
+f1 = p1 + '\Replay_field.csv'
+f2 = p1 + '\Replay_x.csv'
+f3 = p1 + '\Replay_y.csv'
+np.savetxt(f1, I2_final)
+np.savetxt(f2, FFT_x_ax)
+np.savetxt(f3, FFT_y_ax)
 ##############################################################################
 # aside - plots (ii)
 ##############################################################################
@@ -264,24 +345,24 @@ print('Replay Field plot size = ', RePl_x * 1e6 / Ratio1)
 # plt.colorbar()
 # title('Optimized sub-hologram profile (ideal)')
 
-fig1 = plt.figure('fig1')
-fig1.patch.set_facecolor(cs['mdk_dgrey'])
+# fig1 = plt.figure('fig1')
+# fig1.patch.set_facecolor(cs['mdk_dgrey'])
 
-ax11 = fig1.add_subplot(221)
-plt.imshow(I1_final_full)
+# ax11 = fig1.add_subplot(221)
+# plt.imshow(I1_final_full)
 
-ax12 = fig1.add_subplot(222)
-plt.imshow(I2_final_full)
+# ax12 = fig1.add_subplot(222)
+# plt.imshow(I2_final_full)
 
-ax13 = fig1.add_subplot(223)
-plt.imshow(np.abs(E_calc_phase))
-plt.title('SLM Phase', fontsize=8)
+# ax13 = fig1.add_subplot(223)
+# plt.imshow(np.abs(E_calc_phase))
+# plt.title('SLM Phase', fontsize=8)
 
-ax14 = fig1.add_subplot(224)
-plt.imshow(np.abs(E_calc_amplt))
-plt.title('Incident Beam', fontsize=8)
+# ax14 = fig1.add_subplot(224)
+# plt.imshow(np.abs(E_calc_amplt))
+# plt.title('Incident Beam', fontsize=8)
 
-plt.tight_layout()
+# plt.tight_layout()
 
 # fig1 = plt.figure('fig1')
 # fig1.patch.set_facecolor(cs['mdk_dgrey'])
@@ -291,15 +372,13 @@ plt.tight_layout()
 
 # plt.imshow(I2_final)
 
-# fig2 = plt.figure('fig2')
-# fig2.patch.set_facecolor(cs['mdk_dgrey'])
-# ax2 = fig2.add_subplot(111)
-# ax2.set_xlabel('x axis')
-# ax2.set_ylabel('y axis')
+fig2 = plt.figure('fig2')
+fig2.patch.set_facecolor(cs['mdk_dgrey'])
+ax2 = fig2.add_subplot(111)
+ax2.set_xlabel('x axis')
+ax2.set_ylabel('y axis')
 
-# plt.plot(R0[LC_cy, LC_cx - 2 * px_pad - 1:LC_cx + 2 * px_pad + 2], 'o-')
-# plt.plot([px_pad + 1, px_pad + 1], [1, 0], c=cs['ggblue'])
-# plt.plot([3 * px_pad + 1, 3 * px_pad + 1], [1, 0], c=cs['ggblue'])
+plt.plot(I2_final[:, np.shape(I2_final)[1] / 2], 'o-')
 
 # fig4 = plt.figure('fig4')
 # fig4.patch.set_facecolor(cs['mdk_dgrey'])
@@ -315,7 +394,7 @@ fig5.patch.set_facecolor(cs['mdk_dgrey'])
 ax5_1 = fig5.add_subplot(121)
 ax5_1.set_xlabel('LCOS x axis (μm)')
 ax5_1.set_ylabel('LCOS y axis (μm)')
-plt.imshow(H, extent=prd.extents(LCOS_x_ax) + prd.extents(LCOS_y_ax))
+plt.imshow(Z2, extent=prd.extents(LCOS_x_ax) + prd.extents(LCOS_y_ax))
 ax5_2 = fig5.add_subplot(122)
 ax5_2.set_xlabel('Replay x axis (μm)')
 ax5_2.set_ylabel('Replay y axis (μm)')
