@@ -52,12 +52,12 @@ cs = prd.palette()
 δx = 50
 δy = 50
 w = 30
-Λ = 6
-ϕ = π / 4
+Λ = 10
+ϕ = 0 * π / 4
 px_edge = 1  # blurring of rect function - bigger = blurier
 px_pad = 8
 fft_pad = 8
-px = 4.6e-6
+px = 6.4e-6
 λ = 1.55e-6
 f = 9.1e-3
 
@@ -76,7 +76,8 @@ f = 9.1e-3
 ##############################################################################
 # 1 - Generate Hologram
 ##############################################################################
-(_, H) = prd.holo_tilt(Λ, ϕ, δx, δy)
+Z = prd.phase_tilt(Λ, ϕ, δx, δy)
+H = prd.phase_mod(Z)
 
 # Increase resolution
 # Increase calculation resolution by representing each pixel by px_pad**2
@@ -217,27 +218,34 @@ I2_final_full = 10 * np.log10(I_replay)
 I2_final_full[I2_final_full < -60] = -60
 
 # Generate axis
-LCOS_x = δx * px / 2
-LCOS_y = δy * px / 2
+Ratio2 = np.shape(phase_SLM_2)[0] / np.shape(H)[0]
+Ratio1 = np.shape(I_replay)[0] / np.shape(I2_final)[0]
 
-FFT_x = f * λ / (2 * fft_pad * LCOS_x)
-FFT_y = f * λ / (2 * fft_pad * LCOS_y)
+LCOS_x = δx * px
+LCOS_y = δy * px
 
-LCOS_x_ax = np.linspace(-LCOS_x, LCOS_x, np.shape(phase_SLM_2)[0])
-LCOS_y_ax = np.linspace(-LCOS_y, LCOS_y, np.shape(phase_SLM_2)[1])
-
-FFT_x_ax = np.linspace(-FFT_x * 100 / np.shape(I2_final)[0],
-                       FFT_x * 100 / np.shape(I2_final)[0],
-                       np.shape(I2_final)[0])
+RePl_x = (f * λ) / (px / Ratio2)
+RePl_y = (f * λ) / (px / Ratio2)
 
 
-FFT_y_ax = np.linspace(-FFT_y * 100 / np.shape(I2_final)[1],
-                       FFT_y * 100 / np.shape(I2_final)[1],
-                       np.shape(I2_final)[1])
+LCOS_x_ax = 1e6 * np.linspace(-LCOS_x, LCOS_x, np.shape(phase_SLM_2)[0])
+LCOS_y_ax = 1e6 * np.linspace(-LCOS_y, LCOS_y, np.shape(phase_SLM_2)[1])
 
-print(LCOS_x * 1e6)
-print(FFT_x * 1e6)
-print(np.max(FFT_x_ax * 1e6))
+FFT_x_ax = (1e6 / Ratio1) * np.linspace(-RePl_x / 2, RePl_x / 2,
+                                        np.shape(I2_final)[0])
+
+
+FFT_y_ax = (1e6 / Ratio1) * np.linspace(-RePl_y / 2, RePl_y / 2,
+                                        np.shape(I2_final)[1])
+
+print('I_reply = ', np.shape(I_replay))
+print('I2_final = ', np.shape(I2_final))
+print('Ratio = ', np.shape(I_replay)[0] / np.shape(I2_final)[0])
+print('Ratio2 = ', np.shape(phase_SLM_2)[0] / np.shape(H)[0])
+print('LCOS size = ', LCOS_x * 1e6)
+print('Replay Field size = ', RePl_x * 1e6)
+print('Replay Field plot size = ', RePl_x * 1e6 / Ratio1)
+
 ##############################################################################
 # aside - plots (ii)
 ##############################################################################
@@ -256,54 +264,63 @@ print(np.max(FFT_x_ax * 1e6))
 # plt.colorbar()
 # title('Optimized sub-hologram profile (ideal)')
 
-fig5 = plt.figure('fig5')
-fig5.patch.set_facecolor(cs['mdk_dgrey'])
-ax51 = fig5.add_subplot(221)
+fig1 = plt.figure('fig1')
+fig1.patch.set_facecolor(cs['mdk_dgrey'])
+
+ax11 = fig1.add_subplot(221)
 plt.imshow(I1_final_full)
 
-ax52 = fig5.add_subplot(222)
+ax12 = fig1.add_subplot(222)
 plt.imshow(I2_final_full)
-plt.colorbar()
 
-ax53 = fig5.add_subplot(223)
+ax13 = fig1.add_subplot(223)
 plt.imshow(np.abs(E_calc_phase))
-plt.colorbar()
-plt.title('E_calc_phase', fontsize=8)
+plt.title('SLM Phase', fontsize=8)
 
-ax54 = fig5.add_subplot(224)
+ax14 = fig1.add_subplot(224)
 plt.imshow(np.abs(E_calc_amplt))
-plt.colorbar()
-ax54.set_title('E_calc_amplt', fontsize=8)
+plt.title('Incident Beam', fontsize=8)
 
 plt.tight_layout()
 
-fig1 = plt.figure('fig1')
-fig1.patch.set_facecolor(cs['mdk_dgrey'])
-ax1 = fig1.add_subplot(111)
-ax1.set_xlabel('x axis')
-ax1.set_ylabel('y axis')
+# fig1 = plt.figure('fig1')
+# fig1.patch.set_facecolor(cs['mdk_dgrey'])
+# ax1 = fig1.add_subplot(111)
+# ax1.set_xlabel('x axis')
+# ax1.set_ylabel('y axis')
 
-plt.imshow(I2_final)
+# plt.imshow(I2_final)
 
-fig2 = plt.figure('fig2')
-fig2.patch.set_facecolor(cs['mdk_dgrey'])
-ax2 = fig2.add_subplot(111)
-ax2.set_xlabel('x axis')
-ax2.set_ylabel('y axis')
+# fig2 = plt.figure('fig2')
+# fig2.patch.set_facecolor(cs['mdk_dgrey'])
+# ax2 = fig2.add_subplot(111)
+# ax2.set_xlabel('x axis')
+# ax2.set_ylabel('y axis')
 
-plt.plot(R0[LC_cy, LC_cx - 2 * px_pad - 1:LC_cx + 2 * px_pad + 2], 'o-')
-plt.plot([px_pad + 1, px_pad + 1], [1, 0], c=cs['ggblue'])
-plt.plot([3 * px_pad + 1, 3 * px_pad + 1], [1, 0], c=cs['ggblue'])
+# plt.plot(R0[LC_cy, LC_cx - 2 * px_pad - 1:LC_cx + 2 * px_pad + 2], 'o-')
+# plt.plot([px_pad + 1, px_pad + 1], [1, 0], c=cs['ggblue'])
+# plt.plot([3 * px_pad + 1, 3 * px_pad + 1], [1, 0], c=cs['ggblue'])
 
+# fig4 = plt.figure('fig4')
+# fig4.patch.set_facecolor(cs['mdk_dgrey'])
+# ax4 = fig4.add_subplot(111)
+# ax4.set_xlabel('x axis')
+# ax4.set_ylabel('y axis')
+# plt.plot(H[0, 0: 2 * Λ], 'o')
+# plt.plot(np.linspace(0, 2 * Λ, 2 * Λ * (2 * px_pad + 1)) - 0.5,
+#          phase_SLM_2[px_pad, 0: 2 * Λ * (2 * px_pad + 1)])
 
-fig4 = plt.figure('fig4')
-fig4.patch.set_facecolor(cs['mdk_dgrey'])
-ax4 = fig4.add_subplot(111)
-ax4.set_xlabel('x axis')
-ax4.set_ylabel('y axis')
-plt.plot(H[0, 0: 2 * Λ], 'o')
-plt.plot(np.linspace(0, 2 * Λ, 2 * Λ * (2 * px_pad + 1)) - 0.5,
-         phase_SLM_2[px_pad, 0: 2 * Λ * (2 * px_pad + 1)])
+fig5 = plt.figure('fig5')
+fig5.patch.set_facecolor(cs['mdk_dgrey'])
+ax5_1 = fig5.add_subplot(121)
+ax5_1.set_xlabel('LCOS x axis (μm)')
+ax5_1.set_ylabel('LCOS y axis (μm)')
+plt.imshow(H, extent=prd.extents(LCOS_x_ax) + prd.extents(LCOS_y_ax))
+ax5_2 = fig5.add_subplot(122)
+ax5_2.set_xlabel('Replay x axis (μm)')
+ax5_2.set_ylabel('Replay y axis (μm)')
+plt.imshow(I2_final, extent=prd.extents(FFT_x_ax) + prd.extents(FFT_y_ax))
+plt.tight_layout()
 
 # fig6 = plt.figure('fig6')
 # ax6 = fig6.gca(projection='3d')
@@ -322,6 +339,6 @@ plt.plot(np.linspace(0, 2 * Λ, 2 * Λ * (2 * px_pad + 1)) - 0.5,
 
 plt.show()
 
-prd.PPT_save_2d(fig1, ax1, 'plot0.png')
-prd.PPT_save_2d(fig2, ax2, 'plot1.png')
-prd.PPT_save_2d(fig4, ax4, 'plot2.png')
+# prd.PPT_save_2d(fig1, ax1, 'plot0.png')
+# prd.PPT_save_2d(fig2, ax2, 'plot1.png')
+# prd.PPT_save_2d(fig4, ax4, 'plot2.png')

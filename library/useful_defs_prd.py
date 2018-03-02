@@ -316,17 +316,17 @@ def holo_gen(*LabVIEW_data):
     ϕ_max = ϕ_g[-1]
     # Define holo params
     L_δyx = (L_δy, L_δx)
-    H_δyx = (H_δy, H_δx)
+    H_δyx = ()
     H_cyx = (H_cy, H_cx)
-    ϕ_lims = (ϕ_lw, ϕ_up)
-    Holo_params = (Λ, φ, *H_δyx, *ϕ_lims, offset)
+    ϕ_lims = ()
+    Holo_params = (Λ, φ, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
 
     # Calculate sub hologram (Holo_s)
     # t1 = 1000 * time.time()
     # print(int(t1))
     Z1 = phase_tilt(*Holo_params)
     Z2 = phase_sin(*Holo_params, sin_amp, sin_off)
-    Z_mod = phase_mod(Z2 + Z1, *ϕ_lims)
+    Z_mod = phase_mod(Z2 + Z1, ϕ_lw, ϕ_up)
     # t2 = 1000 * time.time()
     # print('generating subhologram = ', int(t2 - t1))
     # Remap phase with non linear ϕ map
@@ -354,7 +354,7 @@ def holo_gen(*LabVIEW_data):
 
     H1 = remap_phase(Z_mod, g_ϕ1)
     # Calculate full holograms (Holo_f)
-    H2 = add_holo_LCOS(*H_cyx, H1, *L_δyx)
+    H2 = add_holo_LCOS(H_cy, H_cx, H1, L_δy, L_δx)
 
     # Save output
     # t3 = 1000 * time.time()
@@ -363,10 +363,10 @@ def holo_gen(*LabVIEW_data):
     # t4 = 1000 * time.time()
     # print('saving bitmap =', int(t4 - t3))
     # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
-    Z1_0 = phase_tilt(Λ, np.pi / 2, *H_δyx, *ϕ_lims, offset)
-    Z2_0 = phase_sin(Λ, np.pi / 2, *H_δyx, *ϕ_lims, offset, sin_amp, sin_off)
-    Z2_0_mod = phase_mod(Z2_0 + Z1_0, *ϕ_lims)
-    Z1_0_mod = phase_mod(Z1_0, *ϕ_lims)
+    Z1_0 = phase_tilt(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
+    Z2_0 = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, sin_amp, sin_off)
+    Z2_0_mod = phase_mod(Z2_0 + Z1_0,  ϕ_lw, ϕ_up,)
+    Z1_0_mod = phase_mod(Z1_0,  ϕ_lw, ϕ_up,)
     h1_0 = remap_phase(Z1_0_mod, g_ϕ1)[:, 5]
     h2_0 = remap_phase(Z2_0_mod, g_ϕ1)[:, 5]
     h3_0 = remap_phase(Z2_0_mod, g_ϕ)[:, 5]
@@ -1192,12 +1192,11 @@ def sweep_multi(data_in, values, Ps_current, variables):
         data_out = data_out + ',' + elem
     return loop_out, data_out
 
+
 ###############################################################################
 # Maths defs
 ###############################################################################
 # Generic 1D Gaussian function ################################################
-
-
 def Gaussian_1D(x, A, x_c, σ_x, bkg=0, N=1):
     x_c = float(x_c)
     g = bkg + A * np.exp(- (((x - x_c) ** 2) / (2 * σ_x ** 2))**N)
@@ -1316,6 +1315,12 @@ def Pad_A_elements(A, n, a=0):
                 P[i1, i2] = A[(i1 - n) // (2 * n + 1),
                               (i2 - n) // (2 * n + 1)]
     return P
+
+
+# Find nearest element in array to value
+def find_nearest(array, value):
+    idx = (np.abs(array - value)).argmin()
+    return array[idx], idx
 
 
 ###############################################################################

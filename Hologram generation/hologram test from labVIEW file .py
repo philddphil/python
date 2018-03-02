@@ -42,28 +42,33 @@ cs = prd.palette()
 # Do some stuff
 ##############################################################################
 π = np.pi
-p1 = (r"C:\Users\Philip\Documents\Technical Stuff"
-      r"\Hologram optimisation\Polynomial distortion")
+p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Algorithmic implementation\180226 By port")
 f0 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Algorithmic implementation\180226 By port\Port 1\fibre1.csv")
+      r"\Algorithmic implementation\180227\Post realignment\Port 2\fibre2.csv")
 f1 = p1 + r'\Phase Ps.csv'
 f2 = p1 + r'\Phase greys.csv'
-Λ = 4.5
-φ = 0 * π / 4
-H_δx = 20
-H_δy = 20
-ϕ_lw = 0.5 * π
-ϕ_up = 2.5 * π
-off = 0
-os_lw = 0.1 * π
-os_up = 0.2 * π
-osw_lw = 15
-osw_up = 3
-g_min = 0
-g_max = 255
-
+fibre = 2
+fibre_c = 'fibre9d_' + str(fibre)
 holo_data = np.genfromtxt(f0, delimiter=',')
 print(holo_data)
+
+Λ = holo_data[0]
+φ =  (np.pi / 180) * holo_data[1]
+H_δx = int(holo_data[4])
+H_δy = int(holo_data[5])
+ϕ_lw = π * holo_data[10]
+ϕ_up = π * holo_data[11]
+
+os_lw = π * holo_data[12]
+os_up = π * holo_data[13]
+osw_lw = holo_data[14]
+osw_up = holo_data[15]
+
+off = holo_data[16]
+
+g_min = 0
+g_max = 255
 
 y_dB = np.genfromtxt(f1, delimiter=',')
 y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
@@ -82,43 +87,49 @@ except RuntimeError:
     print("Error - curve_fit failed")
 ϕ_A = popt[0]
 ϕ_B = popt[1]
-ϕ_g = prd.ϕ_g_fun(x3, popt[0], popt[1])
-g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
+ϕ_g_lu = prd.ϕ_g_fun(x3, popt[0], popt[1])
+ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
 
-ϕ_max = ϕ_g[-1]
+ϕ_max = ϕ_g_lu[-1]
 ϕ1 = np.linspace(0, ϕ_max, 256)
 
 
 X = range(H_δx)
 Y = range(H_δy)
 Z1 = prd.phase_tilt(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off)
+Z1a = prd.phase_tilt(Λ, π / 2, H_δx, H_δy, ϕ_lw, ϕ_up, off)
 Z2 = prd.phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
 Z1_mod = prd.phase_mod(Z1, ϕ_lw, ϕ_up)
+Z1a_mod = prd.phase_mod(Z1a, ϕ_lw, ϕ_up)
 
 
-g_ϕ0 = interp1d(ϕ_g, np.linspace(0, 255, 256))
+g_ϕ0 = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
 
 gs0 = g_ϕ0(ϕ1)
 
-g_ind1 = gs0 < g_ϕ(ϕ_lw + os_lw)
-g_ind2 = gs0 > g_ϕ(ϕ_up - os_up)
+g_ind1 = gs0 < g_ϕ0(ϕ_lw + os_lw)
+g_ind2 = gs0 > g_ϕ0(ϕ_up - os_up)
 
 gs1 = copy.copy(gs0)
 gs2 = copy.copy(gs0)
 gs1[g_ind1] = 0
 gs2[g_ind2] = 255
 
-gs1 = prd.n_G_blurs(gs1, osw_lw)
-gs2 = prd.n_G_blurs(gs2, osw_up)
+gs1b = prd.n_G_blurs(gs1, osw_lw)
+gs2b = prd.n_G_blurs(gs2, osw_up)
 g_mid = int(g_ϕ0((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
 
-gs3 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
+gs3 = np.concatenate((gs1b[0:g_mid], gs2b[g_mid:]))
+gs4 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
 
 g_ϕ1 = interp1d(ϕ1, gs3)
 
 Z12_mod = prd.phase_mod(Z1 + Z2, ϕ_lw, ϕ_up)
-H1 = prd.remap_phase(Z1_mod, g_ϕ)
+H1 = prd.remap_phase(Z1_mod, g_ϕ0)
+H1a = prd.remap_phase(Z1a_mod, g_ϕ0)
 H2 = prd.remap_phase(Z1_mod, g_ϕ1)
+H2a = prd.remap_phase(Z1a_mod, g_ϕ1)
+
 
 ##############################################################################
 # Plot some figures
@@ -157,12 +168,26 @@ H2 = prd.remap_phase(Z1_mod, g_ϕ1)
 # ax1.set_xlabel('x axis - greylevel')
 
 
+fig1 = plt.figure('fig1', figsize=(4, 4))
+ax1 = fig1.add_subplot(1, 1, 1)
+fig1.patch.set_facecolor(cs['mdk_dgrey'])
+ax1.set_ylabel('y axis - phase')
+ax1.set_xlabel('x axis - pixel')
+l3 = plt.plot(ϕ_g(H2a[:, 0])/π, '.:')
+l3 = plt.plot(Z1a_mod[:, 0]/π, '.:')
+plt.tight_layout()
+
+# l3 = plt.plot(Z1a_mod[0, :], '.:')
+
 fig2 = plt.figure('fig2', figsize=(4, 4))
 ax2 = fig2.add_subplot(1, 1, 1)
 fig2.patch.set_facecolor(cs['mdk_dgrey'])
+# plt.plot(ϕ1/π, gs0)
+plt.plot(ϕ1/π, gs3, c=cs[fibre_c])
+# plt.plot(ϕ1/π, gs4)
 ax2.set_ylabel('y axis - greylevel')
-ax2.set_xlabel('x axis - pixel')
-l3 = plt.plot(Z1_mod[0, :], '.:')
+ax2.set_xlabel('x axis - phase')
+plt.tight_layout()
 
 
 fig3 = plt.figure('fig3', figsize=(4, 4))
@@ -171,7 +196,16 @@ fig3.patch.set_facecolor(cs['mdk_dgrey'])
 ax3.set_ylabel('y axis - px')
 ax3.set_xlabel('x axis - px')
 
-l5 = plt.imshow(Z1_mod)
+l5 = plt.imshow(H2[:,:], cmap='binary')
+plt.tight_layout()
+
+fig4 = plt.figure('fig4', figsize=(4, 4))
+ax4 = fig4.add_subplot(1, 1, 1)
+fig4.patch.set_facecolor(cs['mdk_dgrey'])
+ax4.set_ylabel('y axis - px')
+ax4.set_xlabel('x axis - px')
+
+l5 = plt.imshow(H2a[:, :], cmap='binary')
 # l6 = plt.plot(ϕ1 / π, g_ϕ1(ϕ1), '.')
 
 
@@ -182,4 +216,7 @@ l5 = plt.imshow(Z1_mod)
 plt.tight_layout()
 plt.show()
 os.chdir(p1)
-# prd.PPT_save_2d(fig1, ax1, 'plot1.png')
+prd.PPT_save_2d(fig1, ax1, 'plot1.png')
+prd.PPT_save_2d(fig2, ax2, 'plot2.png')
+prd.PPT_save_2d(fig3, ax3, 'plot3.png')
+prd.PPT_save_2d(fig4, ax4, 'plot4.png')
