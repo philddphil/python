@@ -57,7 +57,7 @@ fft_pad = 4
 px = 6.4e-6
 λ = 1.55e-6
 f = 9.1e-3
-w = 30
+w = 20
 
 ##############################################################################
 # CODE STRUCTURE
@@ -86,7 +86,7 @@ f2 = p0 + r'\Phase greys.csv'
 holo_data = np.genfromtxt(f0, delimiter=',')
 
 Λ = holo_data[0]
-φ = (np.pi / 180) * holo_data[1]
+φ = (np.pi / 180) * 90
 H_δx = int(holo_data[4])
 H_δy = int(holo_data[5])
 H_δx = 50
@@ -375,10 +375,10 @@ np.savetxt(f3, FFT_y_ax)
 fig2 = plt.figure('fig2')
 fig2.patch.set_facecolor(cs['mdk_dgrey'])
 ax2 = fig2.add_subplot(111)
-ax2.set_xlabel('x axis')
-ax2.set_ylabel('y axis')
+ax2.set_xlabel('x axis (replay field distance - μm)')
+ax2.set_ylabel('y axis (power - dB)')
 
-plt.plot(I2_final[:, np.shape(I2_final)[1] / 2], 'o-')
+plt.plot(FFT_x_ax, I2_final[:, np.shape(I2_final)[1] / 2], 'o-')
 
 # fig4 = plt.figure('fig4')
 # fig4.patch.set_facecolor(cs['mdk_dgrey'])

@@ -1,14 +1,10 @@
 ##############################################################################
 # Import some libraries
 ##############################################################################
-
-import os
 import glob
 import copy
 import random
-import io
-import csv
-import time
+import re
 
 import numpy as np
 import scipy as sp
@@ -16,10 +12,7 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 
 from scipy import ndimage
-from scipy import io
 from scipy.interpolate import interp1d
-from scipy.special import erf
-
 from PIL import Image
 
 np.set_printoptions(suppress=True)
@@ -178,7 +171,7 @@ def PPT_save_2d_im(fig, ax, cb, name):
     ax.tick_params(axis='x', colors='xkcd:charcoal grey')
     ax.tick_params(axis='y', colors='xkcd:charcoal grey')
     cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
-    cbylabel_obj = plt.getp(cb.ax.axes, 'yticklabels')
+    # cbylabel_obj = plt.getp(cb.ax.axes, 'yticklabels')
     plt.setp(cbytick_obj, color='xkcd:charcoal grey')
 
     ax.figure.savefig(name)
@@ -285,7 +278,6 @@ def variable_unpack(LabVIEW_data):
 # Generate hologram and save as bmp ###########################################
 def holo_gen(*LabVIEW_data):
     # Unpack parameters
-    # cs = palette()
     Λ = LabVIEW_data[0]
     φ = (np.pi / 180) * LabVIEW_data[1]
 
@@ -323,7 +315,6 @@ def holo_gen(*LabVIEW_data):
     Z1 = phase_tilt(*Holo_params)
     Z2 = phase_sin(*Holo_params, sin_amp, sin_off)
     Z_mod = phase_mod(Z2 + Z1, ϕ_lw, ϕ_up)
-    # t2 = 1000 * time.time()
     # print('generating subhologram = ', int(t2 - t1))
     # Remap phase with non linear ϕ map
     ϕ1 = np.linspace(0, ϕ_max, 256)
@@ -357,7 +348,8 @@ def holo_gen(*LabVIEW_data):
     # print('saving bitmap =', int(t4 - t3))
     # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
     Z1_0 = phase_tilt(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
-    Z2_0 = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset, sin_amp, sin_off)
+    Z2_0 = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw,
+                     ϕ_up, offset, sin_amp, sin_off)
     Z2_0_mod = phase_mod(Z2_0 + Z1_0,  ϕ_lw, ϕ_up,)
     Z1_0_mod = phase_mod(Z1_0,  ϕ_lw, ϕ_up,)
     h1_0 = remap_phase(Z1_0_mod, g_ϕ1)[:, 5]
@@ -1114,6 +1106,7 @@ def sweep_fit():
     return fit_success, popt[1]
 
 
+# Call sweep multiple time for different hologram params in 'values' ##########
 def sweep_multi(data_in, values, Ps_current, variables):
     i0_p = r'..\..\Data\Python loops\Swept i0.txt'
     i1_p = r'..\..\Data\Python loops\Swept i1.txt'
@@ -1184,6 +1177,286 @@ def sweep_multi(data_in, values, Ps_current, variables):
         elem = (str(np.round(i1[1], 6))).zfill(10)
         data_out = data_out + ',' + elem
     return loop_out, data_out
+
+
+# Load a fibre##.csv which describes a hologram and return various values #####
+def holo_load(f0, p1):
+    # f0 is the csv file, p0 is the phase mapping file
+    cs = palette()
+    π = np.pi
+    f1 = p1 + r'\Phase Ps.csv'
+    f2 = p1 + r'\Phase greys.csv'
+    number = re.findall(r'[-+]?\d+[\.]?\d*', f0)
+    fibre = str(int(np.round(float(number[-1]))))
+    fibre_c = 'fibre9d_' + str(fibre)
+    holo_data = np.genfromtxt(f0, delimiter=',')
+    Λ = holo_data[0]
+    φ = (np.pi / 180) * holo_data[1]
+    H_δx = int(holo_data[4])
+    H_δy = int(holo_data[5])
+    ϕ_lw = π * holo_data[10]
+    ϕ_up = π * holo_data[11]
+    os_lw = π * holo_data[12]
+    os_up = π * holo_data[13]
+    osw_lw = holo_data[14]
+    osw_up = holo_data[15]
+    off = holo_data[16]
+
+    g_min = 0
+    g_max = 255
+
+    y_dB = np.genfromtxt(f1, delimiter=',')
+    y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+
+    x0 = np.genfromtxt(f2, delimiter=',')
+    x1 = np.linspace(g_min, g_max, 25)
+    x3 = np.linspace(g_min, g_max, 256)
+    f1 = interp1d(x0, y_lin)
+    initial_guess = (15, 1 / 800)
+
+    try:
+        popt, _ = opt.curve_fit(P_g_fun, x1, f1(
+            x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
+
+    except RuntimeError:
+        print("Error - curve_fit failed")
+    ϕ_A = popt[0]
+    ϕ_B = popt[1]
+    ϕ_g_lu = ϕ_g_fun(x3, popt[0], popt[1])
+    ϕ_g = interp1d(np.linspace(g_min, g_max, 256), ϕ_g_lu)
+
+    ϕ_max = ϕ_g_lu[-1]
+    ϕ1 = np.linspace(0, ϕ_max, 256)
+
+    X = range(H_δx)
+    Y = range(H_δy)
+    Z1 = phase_tilt(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off)
+    Z1a = phase_tilt(Λ, π / 2, H_δx, H_δy, ϕ_lw, ϕ_up, off)
+    Z2 = phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
+    Z1_mod = phase_mod(Z1, ϕ_lw, ϕ_up)
+    Z1a_mod = phase_mod(Z1a, ϕ_lw, ϕ_up)
+
+    g_ϕ0 = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
+
+    gs0 = g_ϕ0(ϕ1)
+
+    g_ind1 = gs0 < g_ϕ0(ϕ_lw + os_lw)
+    g_ind2 = gs0 > g_ϕ0(ϕ_up - os_up)
+
+    gs1 = copy.copy(gs0)
+    gs2 = copy.copy(gs0)
+    gs1[g_ind1] = 0
+    gs2[g_ind2] = 255
+
+    gs1b = n_G_blurs(gs1, osw_lw)
+    gs2b = n_G_blurs(gs2, osw_up)
+    g_mid = int(g_ϕ0((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
+
+    gs3 = np.concatenate((gs1b[0:g_mid], gs2b[g_mid:]))
+    gs4 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
+
+    g_ϕ1 = interp1d(ϕ1, gs3)
+
+    Z12_mod = phase_mod(Z1 + Z2, ϕ_lw, ϕ_up)
+    H1 = remap_phase(Z1_mod, g_ϕ0)
+    H1a = remap_phase(Z1a_mod, g_ϕ0)
+    H2 = remap_phase(Z1_mod, g_ϕ1)
+    H2a = remap_phase(Z1a_mod, g_ϕ1)
+    Zf = ϕ_g(H2)
+    Zfa = ϕ_g(H2a)
+    Profile1 = ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]) - min(ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]))
+
+    # plt.plot(Profile1/π, '.-', c=cs[fibre_c])
+    # plt.plot(ϕ1 / π, gs3, c=cs[fibre_c])
+    return H1a, Zf, H2a, Zfa
+
+
+# Calculate the replay field of a fibre##.csv hologram description file #######
+def holo_replay(f0, p1):
+    π = np.pi
+    px_edge = 1  # blurring of rect function - bigger = blurier
+    px_pad = 8
+    fft_pad = 4
+    px = 6.4e-6
+    λ = 1.55e-6
+    f = 9.1e-3
+    w = 60
+
+    holo_data = np.genfromtxt(f0, delimiter=',')
+    Λ = holo_data[0]
+    φ = (np.pi / 180) * holo_data[1]
+    H_δx = int(holo_data[4])
+    H_δy = int(holo_data[5])
+    ϕ_lw = π * holo_data[10]
+    ϕ_up = π * holo_data[11]
+    os_lw = π * holo_data[12]
+    os_up = π * holo_data[13]
+    osw_lw = holo_data[14]
+    osw_up = holo_data[15]
+    off = holo_data[16]
+    ##########################################################################
+    # CODE STRUCTURE
+    ##########################################################################
+    # Function 1 - generation of base hologram
+    # Function 2 - define Gaussian intensity profile (2D)
+    # Function 3 - add psf of pixels of SLM
+    #            - plots (i)
+    # Function 4 - replay field calculation.
+    # Function 5 - CEF calculation.
+    #            - plots (ii)
+
+    ##########################################################################
+    # 1 - Generate Hologram
+    ##########################################################################
+    H, Z, H0, Z0 = holo_load(f0, p1)
+
+    LCx = np.shape(Z)[0] * (2 * px_pad + 1)
+    LCy = np.shape(Z)[1] * (2 * px_pad + 1)
+    LC_field = Pad_A_elements(Z, px_pad)
+    LC_field_0 = Pad_A_elements(Z0, px_pad)
+
+    SLM_x = range(LCx)
+    SLM_y = range(LCy)
+    coords = np.meshgrid(SLM_x, SLM_y)
+
+    ##########################################################################
+    # 2 - Define Gaussian intensity profile (2D)
+    ##########################################################################
+    G1 = Gaussian_2D(coords, 1, LCx / 2, LCy / 2,
+                     0.25 * w * (2 * px_pad + 1),
+                     0.25 * w * (2 * px_pad + 1))
+    E_field = np.reshape(G1, (LCx, LCy))
+    (LC_cx, LC_cy) = max_i_2d(E_field)
+
+    ##########################################################################
+    # 3 - Generate PSF
+    ##########################################################################
+    # Calculate phase profile for NTxNT points by convolving Np with the psf
+    # Define a point-spread function representing each pixel
+    R0 = np.zeros((LCx, LCy))
+    R0[LC_cx - px_pad:LC_cx + px_pad + 1,
+        LC_cy - px_pad:LC_cy + px_pad + 1] = 1
+    R0 = n_G_blurs(R0, 1, px_edge)
+
+    # Define new phase profile
+    phase_SLM_1 = np.fft.fftshift(np.fft.fft2(
+        np.fft.fftshift(LC_field))) * \
+        np.fft.fftshift(np.fft.fft2(np.fft.fftshift(R0)))
+    phase_SLM_2 = np.fft.fftshift(
+        np.fft.ifft2(np.fft.fftshift(phase_SLM_1)))
+
+    phase_SLM_10 = np.fft.fftshift(np.fft.fft2(
+        np.fft.fftshift(LC_field_0))) * \
+        np.fft.fftshift(np.fft.fft2(np.fft.fftshift(R0)))
+    phase_SLM_20 = np.fft.fftshift(
+        np.fft.ifft2(np.fft.fftshift(phase_SLM_10)))
+
+    ##########################################################################
+    # 4 - Calculate replay field
+    ##########################################################################
+    # Define phase distribution when there is no hologram displayed
+    SLM_zero = np.zeros([LCx, LCy])
+
+    # Define zero padding factor, pad, and generate associated replay field
+    # calaculation matrices
+    E_calc = np.zeros([fft_pad * LCx, fft_pad * LCy])
+    E_calc_phase = np.zeros([fft_pad * LCx, fft_pad * LCy]) * 0j
+    E_calc_amplt = E_calc_phase
+
+    # Calculation of replay field when no grating is displayed ###############
+    E_calc_phase[0:LCx, 0:LCy] = SLM_zero[:, :]
+    E_calc_amplt[0:LCx, 0:LCy] = E_field[:, :]
+    E_replay_zero = np.fft.fftshift(
+        np.fft.fft2(np.fft.fftshift(E_calc_amplt *
+                                    np.exp(1j * E_calc_phase))))
+    I_replay_zero = (abs(E_replay_zero))**2
+
+    # Maximum intensity
+    I_max_zero = np.max(np.max(I_replay_zero))
+
+    # Normalized replay field
+    I_replay_zero = I_replay_zero / I_max_zero
+    E_calc_phase = E_calc * 0j
+
+    # Calculation of replay field when grating is displayed ##################
+    E_calc_phase[0:LCx, 0:LCy] = phase_SLM_2[:, :]
+    E_calc_amplt[0:LCx, 0:LCy] = E_field[:, :]
+    E_replay = np.fft.fftshift(np.fft.fft2(
+        np.fft.fftshift(E_calc_amplt * np.exp(1j * E_calc_phase))))
+    I_replay = (abs(E_replay))**2
+    # Maximum intensity
+    I_max_signal = np.max(np.max(I_replay))
+    # Replay intensity distribution normalized with respect to the
+    # undiffracted zeroth order
+    I_replay = I_replay / I_max_zero
+
+    # Corresponding insertion loss
+    Loss = I_max_signal / I_max_zero
+    print('Loss = ', Loss)
+
+    I1_final = np.zeros([200, 200])
+    I1_final = I_replay_zero[int(LCx * fft_pad / 2 - 100):
+                                           int(LCx * fft_pad / 2 + 100),
+                                           int(LCy * fft_pad / 2 - 100):
+                                           int(LCy * fft_pad / 2 + 100)]
+    I1_final_dB = 10 * np.log10(I1_final)
+    I1_final_dB[I1_final_dB < -60] = -60
+
+    I2_final = np.zeros([200, 200])
+    I2_final = I_replay[int(LCx * fft_pad / 2 - 100):
+                                      int(LCx * fft_pad / 2 + 100),
+                                      int(LCy * fft_pad / 2 - 100):
+                                      int(LCy * fft_pad / 2 + 100)]
+    I2_final_dB = 10 * np.log10(I2_final)
+    I2_final_dB[I2_final_dB < -60] = -60
+
+    # Generate axis
+    Ratio2 = np.shape(phase_SLM_2)[0] / np.shape(Z)[0]
+    Ratio1 = np.shape(I_replay)[0] / np.shape(I2_final)[0]
+
+    LCOS_x = (H_δx + 1) * px
+    LCOS_y = (H_δy + 1) * px
+
+    RePl_x = (f * λ) / (px / Ratio2)
+    RePl_y = (f * λ) / (px / Ratio2)
+
+    LCOS_x_ax_padded = 1e6 * np.linspace(-LCOS_x / 2, LCOS_x / 2,
+                                         np.shape(phase_SLM_2)[0])
+    LCOS_x_ax = np.linspace(-1e6 * H_δx * px / 2,
+                            1e6 * H_δx * px / 2, H_δx)
+
+    LCOS_y_ax_padded = 1e6 * np.linspace(-LCOS_y / 2, LCOS_y / 2,
+                                         np.shape(phase_SLM_2)[1])
+    LCOS_y_ax = np.linspace(-1e6 * H_δy * px / 2,
+                            1e6 * H_δy * px / 2, H_δy)
+
+    FFT_x_ax = (1e6 / Ratio1) * np.linspace(-RePl_x / 2, RePl_x / 2,
+                                            np.shape(I2_final)[0])
+
+    FFT_y_ax = (1e6 / Ratio1) * np.linspace(-RePl_y / 2, RePl_y / 2,
+                                            np.shape(I2_final)[1])
+    plt.figure('fig1')
+    plt.plot(LCOS_y_ax_padded[2 * (px_pad + 0.5) * (Λ + 1) - 2:
+                              2 * (px_pad) * (2 * Λ + 1) + 12],
+             phase_SLM_20[2 * (px_pad + 0.5) * (Λ + 1) - 2:
+                          2 * (px_pad) * (2 * Λ + 1) + 12, 0] / π, '.:')
+    plt.plot(LCOS_y_ax[Λ + 1:2 * Λ + 1], Z0[Λ + 1:2 * Λ + 1, 0] / π, 'o')
+
+    plt.figure('fig2')
+    plt.imshow(I2_final_dB, extent=extents(FFT_x_ax) + extents(FFT_y_ax))
+
+    plt.figure('fig3')
+    plt.plot(FFT_x_ax, I2_final_dB[:, 100])
+
+    plt.figure('fig4')
+    plt.imshow(abs(phase_SLM_2),
+               extent=extents(LCOS_x_ax_padded) + extents(LCOS_y_ax_padded))
+    plt.figure('fig5')
+    plt.imshow(R0[np.shape(R0)[0] / 2 - 2 * px_pad:
+                  np.shape(R0)[0] / 2 + 2 * px_pad,
+                  np.shape(R0)[1] / 2 - 2 * px_pad:
+                  np.shape(R0)[1] / 2 + 2 * px_pad])
+    return I2_final, FFT_x_ax, FFT_y_ax
 
 
 ###############################################################################

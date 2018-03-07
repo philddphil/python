@@ -88,13 +88,11 @@ g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
 ϕ_max = ϕ_g[-1]
 ϕ1 = np.linspace(0, ϕ_max, 256)
 
-
 X = range(H_δx)
 Y = range(H_δy)
 Z1 = prd.phase_tilt(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off)
 Z2 = prd.phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
 Z1_mod = prd.phase_mod(Z1, ϕ_lw, ϕ_up)
-
 
 g_ϕ0 = interp1d(ϕ_g, np.linspace(0, 255, 256))
 

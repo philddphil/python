@@ -54,16 +54,23 @@ holo_data = np.genfromtxt(f0, delimiter=',')
 print(holo_data)
 
 Λ = holo_data[0]
-φ =  (np.pi / 180) * holo_data[1]
+# Λ = 10
+φ = (np.pi / 180) * holo_data[1]
 H_δx = int(holo_data[4])
 H_δy = int(holo_data[5])
 ϕ_lw = π * holo_data[10]
+# ϕ_lw = π * 0.5
 ϕ_up = π * holo_data[11]
+# ϕ_up = π * 2.5
 
 os_lw = π * holo_data[12]
+# os_lw = π * 0.3
 os_up = π * holo_data[13]
+# os_up = π * 0.3
 osw_lw = holo_data[14]
+# osw_lw = 1
 osw_up = holo_data[15]
+# osw_up = 10
 
 off = holo_data[16]
 
@@ -130,7 +137,7 @@ H1a = prd.remap_phase(Z1a_mod, g_ϕ0)
 H2 = prd.remap_phase(Z1_mod, g_ϕ1)
 H2a = prd.remap_phase(Z1a_mod, g_ϕ1)
 
-
+Profile1 = ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]) - min(ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]))
 ##############################################################################
 # Plot some figures
 ##############################################################################
@@ -173,8 +180,7 @@ ax1 = fig1.add_subplot(1, 1, 1)
 fig1.patch.set_facecolor(cs['mdk_dgrey'])
 ax1.set_ylabel('y axis - phase')
 ax1.set_xlabel('x axis - pixel')
-l3 = plt.plot(ϕ_g(H2a[:, 0])/π, '.:')
-l3 = plt.plot(Z1a_mod[:, 0]/π, '.:')
+plt.plot(H2a[:, 0], '.:', c=cs[fibre_c])
 plt.tight_layout()
 
 # l3 = plt.plot(Z1a_mod[0, :], '.:')
@@ -182,8 +188,8 @@ plt.tight_layout()
 fig2 = plt.figure('fig2', figsize=(4, 4))
 ax2 = fig2.add_subplot(1, 1, 1)
 fig2.patch.set_facecolor(cs['mdk_dgrey'])
-# plt.plot(ϕ1/π, gs0)
-plt.plot(ϕ1/π, gs3, c=cs[fibre_c])
+plt.plot(ϕ1 / π, gs0)
+plt.plot(ϕ1 / π, gs3)
 # plt.plot(ϕ1/π, gs4)
 ax2.set_ylabel('y axis - greylevel')
 ax2.set_xlabel('x axis - phase')
@@ -193,10 +199,10 @@ plt.tight_layout()
 fig3 = plt.figure('fig3', figsize=(4, 4))
 ax3 = fig3.add_subplot(1, 1, 1)
 fig3.patch.set_facecolor(cs['mdk_dgrey'])
-ax3.set_ylabel('y axis - px')
+plt.plot(Profile1/π, '.:', c=cs[fibre_c])
+ax3.set_ylabel('phase - / π')
 ax3.set_xlabel('x axis - px')
 
-l5 = plt.imshow(H2[:,:], cmap='binary')
 plt.tight_layout()
 
 fig4 = plt.figure('fig4', figsize=(4, 4))
@@ -204,8 +210,8 @@ ax4 = fig4.add_subplot(1, 1, 1)
 fig4.patch.set_facecolor(cs['mdk_dgrey'])
 ax4.set_ylabel('y axis - px')
 ax4.set_xlabel('x axis - px')
+l5 = plt.imshow(H2[:, :], cmap='binary')
 
-l5 = plt.imshow(H2a[:, :], cmap='binary')
 # l6 = plt.plot(ϕ1 / π, g_ϕ1(ϕ1), '.')
 
 
