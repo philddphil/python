@@ -72,7 +72,7 @@ port1 = port1.reshape(len(x), len(y))
 port2 = prd.Gaussian_2D(coords, 1, 0, 220, lwx, lwy)
 port2 = port2.reshape(len(x), len(y))
 
-port3 = prd.Gaussian_2D(coords, 1, 220, 220, lwx,lwy)
+port3 = prd.Gaussian_2D(coords, 1, 220, 220, lwx, lwy)
 port3 = port3.reshape(len(x), len(y))
 
 port4 = prd.Gaussian_2D(coords, 1, -220, 0, lwx, lwy)
@@ -97,22 +97,23 @@ ports = (port1 + port2 + port3
          + port4 + port5 + port6
          + port7 + port8 + port9)
 
-η1 = prd.Overlap(x,y,I,port2)
-η2 = prd.Overlap(x,y,I,port8)
+η1 = prd.Overlap(x, y, I, port4)
+η2 = prd.Overlap(x, y, I, port6)
 print(η1)
 print(η2)
-print(10*np.log10(η1))
-print(10*np.log10(η2))
+print(10 * np.log10(η1))
+print(10 * np.log10(η2))
 
-plt.imshow(10*np.log10(I), extent=prd.extents(x) + prd.extents(y), origin='bottom')
-ax1.contour(x, y, port8, 8, colors='w', alpha = 0.3)
-ax1.contour(x, y, port2, 8, colors='w', alpha = 0.3)
+plt.imshow(10 * np.log10(I), extent=prd.extents(x) +
+           prd.extents(y), origin='bottom')
+ax1.contour(x, y, port4, 8, colors='w', alpha=0.3)
+ax1.contour(x, y, port6, 8, colors='w', alpha=0.3)
 
 fig2 = plt.figure('fig2', figsize=(4, 4))
 ax2 = fig2.add_subplot(1, 1, 1)
 fig2.patch.set_facecolor(cs['mdk_dgrey'])
 ax2.set_ylabel('power - dB')
 ax2.set_xlabel('x axis - μm')
-plt.plot(10*np.log10(I[:,100]))
+plt.plot(10 * np.log10(I[:, 100]))
 
 plt.show()

@@ -1268,13 +1268,13 @@ def holo_load(f0, p1):
 
     # plt.plot(Profile1/π, '.-', c=cs[fibre_c])
     # plt.plot(ϕ1 / π, gs3, c=cs[fibre_c])
-    return H1a, Zf, H2a, Zfa
+    return H2, Zf, H2a, Zfa
 
 
 # Calculate the replay field of a fibre##.csv hologram description file #######
 def holo_replay(f0, p1):
     π = np.pi
-    px_edge = 1  # blurring of rect function - bigger = blurier
+    px_edge = 3  # blurring of rect function - bigger = blurier
     px_pad = 8
     fft_pad = 4
     px = 6.4e-6
@@ -1396,17 +1396,17 @@ def holo_replay(f0, p1):
 
     I1_final = np.zeros([200, 200])
     I1_final = I_replay_zero[int(LCx * fft_pad / 2 - 100):
-                                           int(LCx * fft_pad / 2 + 100),
-                                           int(LCy * fft_pad / 2 - 100):
-                                           int(LCy * fft_pad / 2 + 100)]
+                             int(LCx * fft_pad / 2 + 100),
+                             int(LCy * fft_pad / 2 - 100):
+                             int(LCy * fft_pad / 2 + 100)]
     I1_final_dB = 10 * np.log10(I1_final)
     I1_final_dB[I1_final_dB < -60] = -60
 
     I2_final = np.zeros([200, 200])
     I2_final = I_replay[int(LCx * fft_pad / 2 - 100):
-                                      int(LCx * fft_pad / 2 + 100),
-                                      int(LCy * fft_pad / 2 - 100):
-                                      int(LCy * fft_pad / 2 + 100)]
+                        int(LCx * fft_pad / 2 + 100),
+                        int(LCy * fft_pad / 2 - 100):
+                        int(LCy * fft_pad / 2 + 100)]
     I2_final_dB = 10 * np.log10(I2_final)
     I2_final_dB[I2_final_dB < -60] = -60
 
@@ -1435,27 +1435,43 @@ def holo_replay(f0, p1):
 
     FFT_y_ax = (1e6 / Ratio1) * np.linspace(-RePl_y / 2, RePl_y / 2,
                                             np.shape(I2_final)[1])
+
     plt.figure('fig1')
     plt.plot(LCOS_y_ax_padded[2 * (px_pad + 0.5) * (Λ + 1) - 2:
                               2 * (px_pad) * (2 * Λ + 1) + 12],
              phase_SLM_20[2 * (px_pad + 0.5) * (Λ + 1) - 2:
                           2 * (px_pad) * (2 * Λ + 1) + 12, 0] / π, '.:')
     plt.plot(LCOS_y_ax[Λ + 1:2 * Λ + 1], Z0[Λ + 1:2 * Λ + 1, 0] / π, 'o')
+    plt.tight_layout()
 
     plt.figure('fig2')
     plt.imshow(I2_final_dB, extent=extents(FFT_x_ax) + extents(FFT_y_ax))
+    plt.tight_layout()
 
     plt.figure('fig3')
     plt.plot(FFT_x_ax, I2_final_dB[:, 100])
+    plt.tight_layout()
 
     plt.figure('fig4')
     plt.imshow(abs(phase_SLM_2),
                extent=extents(LCOS_x_ax_padded) + extents(LCOS_y_ax_padded))
+    plt.tight_layout()
+
     plt.figure('fig5')
     plt.imshow(R0[np.shape(R0)[0] / 2 - 2 * px_pad:
                   np.shape(R0)[0] / 2 + 2 * px_pad,
                   np.shape(R0)[1] / 2 - 2 * px_pad:
                   np.shape(R0)[1] / 2 + 2 * px_pad])
+    plt.tight_layout()
+
+    plt.figure('fig6')
+    plt.imshow(H, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
+    plt.tight_layout()
+
+    plt.figure('fig7')
+    plt.imshow(H0, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
+    plt.tight_layout()
+
     return I2_final, FFT_x_ax, FFT_y_ax
 
 
