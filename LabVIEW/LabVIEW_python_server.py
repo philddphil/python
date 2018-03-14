@@ -168,7 +168,7 @@ while True:
         variables = re.findall(r'\s(\D*)', hol_data)
         values = prd.variable_unpack(LabVIEW_data)
         ϕ_g = prd.fit_phase()
-        g_ϕ = interp1d(ϕ_g, range(255))
+        g_ϕ = interp1d(ϕ_g,  np.linspace(0, 255, 256))
         g_mid = int(g_ϕ(np.pi * values[7] / 2))
         values[10] = g_mid + 1
         values[11] = g_mid
