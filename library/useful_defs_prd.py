@@ -1274,7 +1274,7 @@ def holo_load(f0, p1):
 # Calculate the replay field of a fibre##.csv hologram description file #######
 def holo_replay(f0, p1):
     π = np.pi
-    px_edge = 3  # blurring of rect function - bigger = blurier
+    px_edge = 0  # blurring of rect function - bigger = blurier
     px_pad = 8
     fft_pad = 4
     px = 6.4e-6
@@ -1284,16 +1284,12 @@ def holo_replay(f0, p1):
 
     holo_data = np.genfromtxt(f0, delimiter=',')
     Λ = holo_data[0]
+    Λ = 10
     φ = (np.pi / 180) * holo_data[1]
+    φ = (np.pi / 180) * 90
     H_δx = int(holo_data[4])
     H_δy = int(holo_data[5])
-    ϕ_lw = π * holo_data[10]
-    ϕ_up = π * holo_data[11]
-    os_lw = π * holo_data[12]
-    os_up = π * holo_data[13]
-    osw_lw = holo_data[14]
-    osw_up = holo_data[15]
-    off = holo_data[16]
+
     ##########################################################################
     # CODE STRUCTURE
     ##########################################################################
@@ -1450,6 +1446,9 @@ def holo_replay(f0, p1):
 
     plt.figure('fig3')
     plt.plot(FFT_x_ax, I2_final_dB[:, 100])
+    plt.plot(FFT_x_ax, I2_final_dB[100, :])
+    plt.plot(FFT_x_ax, np.diagonal(I2_final_dB))
+
     plt.tight_layout()
 
     plt.figure('fig4')
@@ -1578,9 +1577,9 @@ def circle(r, x, y):
 
 
 # Mode overlap for 2 fields G1 G2 in field with x & y axis
-def Overlap(x, y, G1, G2):
-    η1 = sp.trapz(sp.trapz((G1 * G2), y), x)**2
-    η2 = sp.trapz(sp.trapz(G1**2, y), x) * sp.trapz(sp.trapz(G2**2, y), x)
+def overlap(x, y, G1, G2):
+    η1 = sp.trapz(sp.trapz((G1 * G2), y), x)
+    η2 = sp.trapz(sp.trapz(G1, y), x) * sp.trapz(sp.trapz(G2, y), x)
     η = η1 / η2
     return η
 
