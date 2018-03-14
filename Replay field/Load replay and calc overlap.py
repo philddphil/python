@@ -48,7 +48,7 @@ p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
       r"\Algorithmic implementation\180226 By port")
 
 p0 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Algorithmic implementation\180227\Post realignment\All holos")
+      r"\Replay field calculation\180313\From post re-alignment 180227\Port 2")
 f0 = p0 + r'\*.csv'
 files = glob.glob(f0)
 
@@ -57,14 +57,9 @@ x = np.genfromtxt(p0 + r'\x.csv', delimiter=',')
 y = np.genfromtxt(p0 + r'\y.csv', delimiter=',')
 coords = np.meshgrid(x, y)
 
-fig1 = plt.figure('fig1', figsize=(4, 4))
-ax1 = fig1.add_subplot(1, 1, 1)
-fig1.patch.set_facecolor(cs['mdk_dgrey'])
-ax1.set_ylabel('y axis - μm')
-ax1.set_xlabel('x axis - μm')
 
-lwy = 50
-lwx = 50
+lwy = 30
+lwx = 30
 
 port1 = prd.Gaussian_2D(coords, 1, -220, 220, lwx, lwy)
 port1 = port1.reshape(len(x), len(y))
@@ -97,23 +92,54 @@ ports = (port1 + port2 + port3
          + port4 + port5 + port6
          + port7 + port8 + port9)
 
-η1 = prd.Overlap(x, y, I, port4)
-η2 = prd.Overlap(x, y, I, port6)
-print(η1)
-print(η2)
-print(10 * np.log10(η1))
-print(10 * np.log10(η2))
+η1 = 10 * np.log10(prd.overlap(x, y, I, port1))
+η2 = 10 * np.log10(prd.overlap(x, y, I, port2))
+η3 = 10 * np.log10(prd.overlap(x, y, I, port3))
+η4 = 10 * np.log10(prd.overlap(x, y, I, port4))
+η6 = 10 * np.log10(prd.overlap(x, y, I, port6))
+η5 = 10 * np.log10(prd.overlap(x, y, I, port5))
+η7 = 10 * np.log10(prd.overlap(x, y, I, port7))
+η8 = 10 * np.log10(prd.overlap(x, y, I, port8))
+η9 = 10 * np.log10(prd.overlap(x, y, I, port9))
 
+ηs = [η1, η2, η3, η4, η6, η7, η8, η9]
+ηs = ηs - max(ηs)
+ηs_sorted = sorted(ηs)
+port_numbers = [1, 2, 3, 4, 6, 7, 8, 9]
+print(ηs_sorted[-2])
+
+fig1 = plt.figure('fig1', figsize=(4, 4))
+ax1 = fig1.add_subplot(1, 1, 1)
+fig1.patch.set_facecolor(cs['mdk_dgrey'])
+ax1.set_ylabel('y axis - μm')
+ax1.set_xlabel('x axis - μm')
+# plt.imshow(ports, extent=prd.extents(x) +
+#            prd.extents(y), origin='bottom', cmap='viridis')
 plt.imshow(10 * np.log10(I), extent=prd.extents(x) +
-           prd.extents(y), origin='bottom')
-ax1.contour(x, y, port4, 8, colors='w', alpha=0.3)
-ax1.contour(x, y, port6, 8, colors='w', alpha=0.3)
+           prd.extents(y), origin='bottom', vmin=-80, vmax=0)
+ax1.contour(x, y, ports, 8,
+            colors='w', alpha=0.7, linewidths=0.5)
+fig1.tight_layout()
+# plt.axis('off')
 
 fig2 = plt.figure('fig2', figsize=(4, 4))
 ax2 = fig2.add_subplot(1, 1, 1)
 fig2.patch.set_facecolor(cs['mdk_dgrey'])
 ax2.set_ylabel('power - dB')
 ax2.set_xlabel('x axis - μm')
-plt.plot(10 * np.log10(I[:, 100]))
+plt.plot(x, 10 * np.log10(I[:, 100]))
+fig2.tight_layout()
+
+fig3 = plt.figure('fig3', figsize=(4, 4))
+ax3 = fig3.add_subplot(1, 1, 1)
+fig3.patch.set_facecolor(cs['mdk_dgrey'])
+ax3.set_ylabel('power - dB')
+ax3.set_xlabel('port number')
+plt.plot(port_numbers, ηs, 'o')
+fig3.tight_layout()
 
 plt.show()
+os.chdir(p0)
+prd.PPT_save_2d(fig3, ax3, 'XTs.png')
+prd.PPT_save_2d(fig2, ax2, 'Profile.png')
+prd.PPT_save_2d(fig1, ax1, 'ports.png')

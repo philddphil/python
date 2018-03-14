@@ -353,24 +353,23 @@ def holo_gen(*LabVIEW_data):
     # t4 = 1000 * time.time()
     # print('saving bitmap =', int(t4 - t3))
     # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
-    Z1_0 = phase_tilt(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
-    Z2_0 = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw,
-                     ϕ_up, offset, sin_amp, sin_off)
-    Z2_0_mod = phase_mod(Z2_0 + Z1_0,  ϕ_lw, ϕ_up,)
-    Z1_0_mod = phase_mod(Z1_0,  ϕ_lw, ϕ_up,)
-    h1_0 = remap_phase(Z1_0_mod, g_ϕ1)[:, 5]
-    h2_0 = remap_phase(Z2_0_mod, g_ϕ1)[:, 5]
-    h3_0 = remap_phase(Z2_0_mod, g_ϕ)[:, 5]
-
+    Z1a = phase_tilt(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
+    Z2a = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw,
+                    ϕ_up, offset, sin_amp, sin_off)
+    Za_mod = phase_mod(Z1a + Z2a, ϕ_lw, ϕ_up)
+    H1a = remap_phase(Za_mod, g_ϕ1)
+    h1_0 = remap_phase(Za_mod, g_ϕ1)[:, 5]
+    h3_0 = remap_phase(Za_mod, g_ϕ)[:, 5]
+    Z1f = ϕ_g(H1)
+    Z1fa = ϕ_g(H1a)
     np.savetxt(r'..\..\Data\Calibration files\greyprofile1.csv',
                h1_0, delimiter=',')
-    np.savetxt(r'..\..\Data\Calibration files\greyprofile2.csv',
-               h2_0, delimiter=',')
+
     np.savetxt(r'..\..\Data\Calibration files\greyprofile3.csv',
                h3_0, delimiter=',')
     # t5 = 1000 * time.time()
     # print('total holo_gen time =', int(t5 - t1))
-    return [H1]
+    return H1, Z1f, H1a, Z1fa
 
 
 # Generate holograms with first two parameters to optimise - Λ and φ ##########
@@ -1280,7 +1279,7 @@ def holo_load(f0, p1):
 # Calculate the replay field of a fibre##.csv hologram description file #######
 def holo_replay(f0, p1):
     π = np.pi
-    px_edge = 3  # blurring of rect function - bigger = blurier
+    px_edge = 0  # blurring of rect function - bigger = blurier
     px_pad = 8
     fft_pad = 4
     px = 6.4e-6
@@ -1290,16 +1289,12 @@ def holo_replay(f0, p1):
 
     holo_data = np.genfromtxt(f0, delimiter=',')
     Λ = holo_data[0]
+    Λ = 10
     φ = (np.pi / 180) * holo_data[1]
+    φ = (np.pi / 180) * 90
     H_δx = int(holo_data[4])
     H_δy = int(holo_data[5])
-    ϕ_lw = π * holo_data[10]
-    ϕ_up = π * holo_data[11]
-    os_lw = π * holo_data[12]
-    os_up = π * holo_data[13]
-    osw_lw = holo_data[14]
-    osw_up = holo_data[15]
-    off = holo_data[16]
+
     ##########################################################################
     # CODE STRUCTURE
     ##########################################################################
@@ -1456,6 +1451,9 @@ def holo_replay(f0, p1):
 
     plt.figure('fig3')
     plt.plot(FFT_x_ax, I2_final_dB[:, 100])
+    plt.plot(FFT_x_ax, I2_final_dB[100, :])
+    plt.plot(FFT_x_ax, np.diagonal(I2_final_dB))
+
     plt.tight_layout()
 
     plt.figure('fig4')
@@ -1584,9 +1582,9 @@ def circle(r, x, y):
 
 
 # Mode overlap for 2 fields G1 G2 in field with x & y axis
-def Overlap(x, y, G1, G2):
-    η1 = sp.trapz(sp.trapz((G1 * G2), y), x)**2
-    η2 = sp.trapz(sp.trapz(G1**2, y), x) * sp.trapz(sp.trapz(G2**2, y), x)
+def overlap(x, y, G1, G2):
+    η1 = sp.trapz(sp.trapz((G1 * G2), y), x)
+    η2 = sp.trapz(sp.trapz(G1, y), x) * sp.trapz(sp.trapz(G2, y), x)
     η = η1 / η2
     return η
 
