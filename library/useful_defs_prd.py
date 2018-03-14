@@ -347,24 +347,23 @@ def holo_gen(*LabVIEW_data):
     # t4 = 1000 * time.time()
     # print('saving bitmap =', int(t4 - t3))
     # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
-    Z1_0 = phase_tilt(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
-    Z2_0 = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw,
-                     ϕ_up, offset, sin_amp, sin_off)
-    Z2_0_mod = phase_mod(Z2_0 + Z1_0,  ϕ_lw, ϕ_up,)
-    Z1_0_mod = phase_mod(Z1_0,  ϕ_lw, ϕ_up,)
-    h1_0 = remap_phase(Z1_0_mod, g_ϕ1)[:, 5]
-    h2_0 = remap_phase(Z2_0_mod, g_ϕ1)[:, 5]
-    h3_0 = remap_phase(Z2_0_mod, g_ϕ)[:, 5]
-
+    Z1a = phase_tilt(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
+    Z2a = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw,
+                    ϕ_up, offset, sin_amp, sin_off)
+    Za_mod = phase_mod(Z1a + Z2a, ϕ_lw, ϕ_up)
+    H1a = remap_phase(Za_mod, g_ϕ1)
+    h1_0 = remap_phase(Za_mod, g_ϕ1)[:, 5]
+    h3_0 = remap_phase(Za_mod, g_ϕ)[:, 5]
+    Z1f = ϕ_g(H1)
+    Z1fa = ϕ_g(H1a)
     np.savetxt(r'..\..\Data\Calibration files\greyprofile1.csv',
                h1_0, delimiter=',')
-    np.savetxt(r'..\..\Data\Calibration files\greyprofile2.csv',
-               h2_0, delimiter=',')
+
     np.savetxt(r'..\..\Data\Calibration files\greyprofile3.csv',
                h3_0, delimiter=',')
     # t5 = 1000 * time.time()
     # print('total holo_gen time =', int(t5 - t1))
-    return [H1]
+    return H1, Z1f, H1a, Z1fa
 
 
 # Generate holograms with first two parameters to optimise - Λ and φ ##########
