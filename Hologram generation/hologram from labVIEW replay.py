@@ -92,7 +92,8 @@ ax7 = fig7.add_subplot(1, 1, 1)
 ax7.set_ylabel('y axis - μm')
 ax7.set_xlabel('x axis - μm')
 
-I, x, y = prd.holo_replay(files[1], p1)
+I, x, y = prd.holo_replay_file(files[1], p1)
+
 np.savetxt(p0 + r'\I.csv', I, delimiter=',')
 np.savetxt(p0 + r'\x.csv', x, delimiter=',')
 np.savetxt(p0 + r'\y.csv', y, delimiter=',')
