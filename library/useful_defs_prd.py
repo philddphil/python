@@ -899,6 +899,10 @@ def sweep(values, Ps_current, variables, param=0):
                       min(values[14] + 4, 25))
         osw_up_rng = (max(0, values[15] - 4),
                       min(values[15] + 4, 25))
+        g_bot_rng = (max(0, values[19] - 10),
+                     min(values[19] + 10, 255))
+        g_top_rng = (max(0, values[20] - 10),
+                     min(values[20] + 10, 255))
 
         offset_rng = (0, 0.2)
         sin_amp_rng = (0, 0.2)
@@ -921,7 +925,9 @@ def sweep(values, Ps_current, variables, param=0):
                     osw_up_rng,
                     offset_rng,
                     sin_amp_rng,
-                    sin_off_rng]
+                    sin_off_rng,
+                    g_bot_rng,
+                    g_top_rng]
         rng_2_swp = all_rngs[param_2_swp]
         rng = np.linspace(rng_2_swp[0], rng_2_swp[1], pts)
         np.savetxt(param_swp_p, rng, delimiter=',')
@@ -1106,13 +1112,10 @@ def sweep_multi(data_in, values, Ps_current, variables):
 # Load a fibre##.csv which describes a hologram and return various values #####
 def holo_load(f0, p1):
     # f0 is the csv file, p0 is the phase mapping file
-    cs = palette()
     π = np.pi
     f1 = p1 + r'\Phase Ps.csv'
     f2 = p1 + r'\Phase greys.csv'
     number = re.findall(r'[-+]?\d+[\.]?\d*', f0)
-    fibre = str(int(np.round(float(number[-1]))))
-    fibre_c = 'fibre9d_' + str(fibre)
     holo_data = np.genfromtxt(f0, delimiter=',')
     Λ = holo_data[0]
     φ = (np.pi / 180) * holo_data[1]
@@ -1126,15 +1129,15 @@ def holo_load(f0, p1):
     osw_up = holo_data[15]
     off = holo_data[16]
 
-    g_min = 0
-    g_max = 255
+    g_min = holo_data[19]
+    g_max = holo_data[20]
 
     y_dB = np.genfromtxt(f1, delimiter=',')
     y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
     x0 = np.genfromtxt(f2, delimiter=',')
-    x1 = np.linspace(g_min, g_max, 25)
-    x3 = np.linspace(g_min, g_max, 256)
+    x1 = np.linspace(0, 255, 25)
+    x3 = np.linspace(0, 255, 256)
     f1 = interp1d(x0, y_lin)
     initial_guess = (15, 1 / 800)
 
@@ -1144,16 +1147,12 @@ def holo_load(f0, p1):
 
     except RuntimeError:
         print("Error - curve_fit failed")
-    ϕ_A = popt[0]
-    ϕ_B = popt[1]
     ϕ_g_lu = ϕ_g_fun(x3, popt[0], popt[1])
     ϕ_g = interp1d(np.linspace(g_min, g_max, 256), ϕ_g_lu)
 
     ϕ_max = ϕ_g_lu[-1]
     ϕ1 = np.linspace(0, ϕ_max, 256)
 
-    X = range(H_δx)
-    Y = range(H_δy)
     Z1 = phase_tilt(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off)
     Z1a = phase_tilt(Λ, π / 2, H_δx, H_δy, ϕ_lw, ϕ_up, off)
     Z2 = phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
