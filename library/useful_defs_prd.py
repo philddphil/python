@@ -1116,10 +1116,6 @@ def holo_load(f0, p1):
     π = np.pi
     f1 = p1 + r'\Phase Ps.csv'
     f2 = p1 + r'\Phase greys.csv'
-<<<<<<< HEAD
-    number = re.findall(r'[-+]?\d+[\.]?\d*', f0)
-=======
->>>>>>> e406cce0722b97140eab0998df3722b2107181d1
     holo_data = np.genfromtxt(f0, delimiter=',')
     Λ = holo_data[0]
     φ = (np.pi / 180) * holo_data[1]
