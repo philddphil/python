@@ -169,9 +169,12 @@ while True:
         values = prd.variable_unpack(LabVIEW_data)
         ϕ_g = prd.fit_phase()
         g_ϕ = interp1d(ϕ_g,  np.linspace(0, 255, 256))
-        g_mid = int(g_ϕ(np.pi * values[7] / 2))
-        values[10] = g_mid + 1
-        values[11] = g_mid
+        ϕ_range = (values[11] - values[10]) 
+        ϕ_mid = ϕ_range/2 + values[10]
+        values[14] = 0
+        values[15] = 0
+        values[12] = ϕ_mid - 0.000001
+        values[13] = ϕ_mid + 0.000001
         prd.holo_gen(*values)
         g_OSlw = (str(round(values[10], 6))).zfill(10)
         g_OSup = (str(round(values[11], 6))).zfill(10)

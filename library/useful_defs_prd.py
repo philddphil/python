@@ -267,11 +267,14 @@ def variable_unpack(LabVIEW_data):
     sin_amp = LabVIEW_data[17]
     sin_off = LabVIEW_data[18]
 
+    g_bot = LabVIEW_data[19]
+    g_top = LabVIEW_data[20]
+
     params = [Λ, φ, L_δx, L_δy,
               H_δx, H_δy, H_cx, H_cy,
               ϕ_min, ϕ_max, ϕ_lw, ϕ_up,
               os_lw, os_up, osw_lw, osw_up,
-              offset, sin_amp, sin_off]
+              offset, sin_amp, sin_off, g_bot, g_top]
     return params
 
 
@@ -302,6 +305,9 @@ def holo_gen(*LabVIEW_data):
     sin_amp = LabVIEW_data[17]
     sin_off = LabVIEW_data[18]
 
+    g_bot = LabVIEW_data[19]
+    g_top = LabVIEW_data[20]
+
     # Phase mapping details (ϕ)
     ϕ_g = fit_phase()
     g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
@@ -325,8 +331,8 @@ def holo_gen(*LabVIEW_data):
 
     gs1 = copy.copy(gs0)
     gs2 = copy.copy(gs0)
-    gs1[g_ind1] = 0
-    gs2[g_ind2] = 255
+    gs1[g_ind1] = g_bot
+    gs2[g_ind2] = g_top
 
     gs1 = n_G_blurs(gs1, osw_lw)
     gs2 = n_G_blurs(gs2, osw_up)
