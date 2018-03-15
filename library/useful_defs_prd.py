@@ -309,7 +309,8 @@ def holo_gen(*LabVIEW_data):
     g_top = LabVIEW_data[20]
 
     # Phase mapping details (ϕ)
-    ϕ_g = fit_phase()
+    ϕ_g_lu = fit_phase()
+    ϕ_g = interp1d(np.linspace(g_min, g_max, 256), ϕ_g_lu)
     g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
     ϕ_max = ϕ_g[-1]
     # Define holo params
@@ -1106,13 +1107,9 @@ def sweep_multi(data_in, values, Ps_current, variables):
 # Load a fibre##.csv which describes a hologram and return various values #####
 def holo_load(f0, p1):
     # f0 is the csv file, p0 is the phase mapping file
-    cs = palette()
     π = np.pi
     f1 = p1 + r'\Phase Ps.csv'
     f2 = p1 + r'\Phase greys.csv'
-    number = re.findall(r'[-+]?\d+[\.]?\d*', f0)
-    fibre = str(int(np.round(float(number[-1]))))
-    fibre_c = 'fibre9d_' + str(fibre)
     holo_data = np.genfromtxt(f0, delimiter=',')
     Λ = holo_data[0]
     φ = (np.pi / 180) * holo_data[1]
@@ -1144,16 +1141,12 @@ def holo_load(f0, p1):
 
     except RuntimeError:
         print("Error - curve_fit failed")
-    ϕ_A = popt[0]
-    ϕ_B = popt[1]
     ϕ_g_lu = ϕ_g_fun(x3, popt[0], popt[1])
     ϕ_g = interp1d(np.linspace(g_min, g_max, 256), ϕ_g_lu)
 
     ϕ_max = ϕ_g_lu[-1]
     ϕ1 = np.linspace(0, ϕ_max, 256)
 
-    X = range(H_δx)
-    Y = range(H_δy)
     Z1 = phase_tilt(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off)
     Z1a = phase_tilt(Λ, π / 2, H_δx, H_δy, ϕ_lw, ϕ_up, off)
     Z2 = phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
@@ -1195,7 +1188,88 @@ def holo_load(f0, p1):
     return H2, Zf, H2a, Zfa
 
 
+def holo_gen_param(p1):
+    # f0 is the csv file, p0 is the phase mapping file
+    π = np.pi
+    f1 = p1 + r'\Phase Ps.csv'
+    f2 = p1 + r'\Phase greys.csv'
+
+    Λ = 10
+    φ = 90 * (np.pi / 180)
+    H_δx = 50
+    H_δy = 50
+    ϕ_lw = π * 0.5
+    ϕ_up = π * 2.5
+    os_lw = π * -0.1
+    os_up = π * -0.1
+    osw_lw = 0
+    osw_up = 0
+    off = 0
+
+    g_min = 0
+    g_max = 255
+
+    y_dB = np.genfromtxt(f1, delimiter=',')
+    y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+
+    x0 = np.genfromtxt(f2, delimiter=',')
+    x1 = np.linspace(g_min, g_max, 25)
+    x3 = np.linspace(g_min, g_max, 256)
+    f1 = interp1d(x0, y_lin)
+    initial_guess = (15, 1 / 800)
+
+    try:
+        popt, _ = opt.curve_fit(P_g_fun, x1, f1(
+            x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
+
+    except RuntimeError:
+        print("Error - curve_fit failed")
+
+    ϕ_g_lu = ϕ_g_fun(x3, popt[0], popt[1])
+    ϕ_g = interp1d(np.linspace(g_min, g_max, 256), ϕ_g_lu)
+
+    ϕ_max = ϕ_g_lu[-1]
+    ϕ1 = np.linspace(0, ϕ_max, 256)
+
+    Z1 = phase_tilt(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off)
+    Z1a = phase_tilt(Λ, π / 2, H_δx, H_δy, ϕ_lw, ϕ_up, off)
+    Z2 = phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
+    Z1_mod = phase_mod(Z1, ϕ_lw, ϕ_up)
+    Z1a_mod = phase_mod(Z1a, ϕ_lw, ϕ_up)
+
+    g_ϕ0 = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
+
+    gs0 = g_ϕ0(ϕ1)
+
+    g_ind1 = gs0 < g_ϕ0(ϕ_lw + os_lw)
+    g_ind2 = gs0 > g_ϕ0(ϕ_up - os_up)
+
+    gs1 = copy.copy(gs0)
+    gs2 = copy.copy(gs0)
+    gs1[g_ind1] = 0
+    gs2[g_ind2] = 255
+
+    gs1b = n_G_blurs(gs1, osw_lw)
+    gs2b = n_G_blurs(gs2, osw_up)
+    g_mid = int(g_ϕ0((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
+
+    gs3 = np.concatenate((gs1b[0:g_mid], gs2b[g_mid:]))
+
+    g_ϕ1 = interp1d(ϕ1, gs3)
+
+    H2 = remap_phase(Z1_mod, g_ϕ1)
+    H2a = remap_phase(Z1a_mod, g_ϕ1)
+    Zf = ϕ_g(H2)
+    Zfa = ϕ_g(H2a)
+    Profile1 = ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]) - min(ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]))
+
+    # plt.plot(Profile1/π, '.-', c=cs[fibre_c])
+    # plt.plot(ϕ1 / π, gs3, c=cs[fibre_c])
+    return H2, Zf, H2a, Zfa
+
 # Calculate the replay field of a fibre##.csv hologram description file #######
+
+
 def holo_replay_file(f0, p1):
     π = np.pi
     px_edge = 0  # blurring of rect function - bigger = blurier
