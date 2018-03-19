@@ -73,8 +73,8 @@ P_g = prd.P_g_fun(x3, popt[0], popt[1])
 ϕ_g_lu = prd.ϕ_g_fun(x3, popt[0], popt[1])
 
 ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
-g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
-print('ϕ_max = ', ϕ_g_lu[-1])
+g_ϕ = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
+print('ϕ_max = ', ϕ_g_lu[-1]/np.pi)
 
 ##############################################################################
 # Plot some figures
@@ -114,7 +114,7 @@ ax1.set_ylabel('y axis - Power')
 # plt.plot(ϕ_g/π,'.:', c=cs['ggblue'])
 
 plt.plot(x0, y_lin1, '.', label='1543', c=cs['ggred'])
-plt.plot(x3, ϕ_g0, label='1543 fit', c=cs['gglred'])
+plt.plot(x3, P_g, label='1543 fit', c=cs['gglred'])
 plt.plot(x3, f1(x3), lw=0.5, label='1543 fit', c=cs['ggdred'])
 
 # plt.plot(x3, ϕ_gi, label='1543 fit', c=cs['ggdred'])

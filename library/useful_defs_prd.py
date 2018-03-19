@@ -311,15 +311,11 @@ def holo_gen(*LabVIEW_data):
     # Phase mapping details (ϕ)
     ϕ_g_lu = fit_phase()
     ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
-<<<<<<< HEAD
-    g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
     ϕ_max = ϕ_g[-1]
-=======
     g_ϕ = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
     ϕ_max = ϕ_g_lu[-1]
     ϕ_mid = ϕ_lw + (ϕ_up - ϕ_lw) / 2
-    print(ϕ_mid / np.pi)
->>>>>>> 5c60244a1eac59f4bffe7f51527ff535f1e8c6a8
+
     # Define holo params
     Holo_params = (Λ, φ, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
 
