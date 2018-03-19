@@ -168,17 +168,23 @@ while True:
         variables = re.findall(r'\s(\D*)', hol_data)
         values = prd.variable_unpack(LabVIEW_data)
         ϕ_g = prd.fit_phase()
-        g_ϕ = interp1d(ϕ_g,  np.linspace(0, 255, 256))
-        ϕ_range = (values[11] - values[10]) 
-        ϕ_mid = ϕ_range/2 + values[10]
+        g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
+        ϕ_range = (values[11] - values[10])
+
         values[14] = 0
         values[15] = 0
-        values[12] = ϕ_mid - 0.000001
-        values[13] = ϕ_mid + 0.000001
+        values[12] = ϕ_range/2 + 0.1
+        values[13] = ϕ_range/2 + 0.1
+        print(values)
         prd.holo_gen(*values)
-        g_OSlw = (str(round(values[10], 6))).zfill(10)
-        g_OSup = (str(round(values[11], 6))).zfill(10)
-        data_out = g_OSlw + ',' + g_OSup
+
+        os_lw_str = (str(round(values[12], 6))).zfill(10)
+        os_up_str = (str(round(values[13], 6))).zfill(10)
+        osw_lw_str = (str(round(values[14], 6))).zfill(10)
+        osw_up_str = (str(round(values[15], 6))).zfill(10)
+
+        data_out = (os_lw_str + ',' + os_up_str +
+                    ',' + osw_lw_str + ',' + osw_up_str)
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'PHASE' in str(cmnd):
