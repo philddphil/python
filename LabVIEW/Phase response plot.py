@@ -40,7 +40,7 @@ cs = prd.palette()
 ##############################################################################
 π = np.pi
 p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Phase response\python phase ramps\1543")
+      r"\Phase response\python phase ramps\180319\Port 2")
 p2 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
       r"\Phase response\python phase ramps\1551")
 p3 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
@@ -52,12 +52,6 @@ f3 = p3 + r"\Phase Ps.csv"
 
 y_dB = np.genfromtxt(f1, delimiter=',')
 y_lin1 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
-
-y_dB = np.genfromtxt(f2, delimiter=',')
-y_lin2 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
-
-y_dB = np.genfromtxt(f3, delimiter=',')
-y_lin3 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
 x0 = np.linspace(0, 255, len(y_lin1))
 x1 = np.linspace(0, 255, 25)
@@ -75,8 +69,12 @@ try:
 except RuntimeError:
     print("Error - curve_fit failed")
 
-ϕ_g0 = prd.P_g_fun(x3, popt[0], popt[1])
-ϕ_gi = prd.P_g_fun(x3, *initial_guess)
+P_g = prd.P_g_fun(x3, popt[0], popt[1])
+ϕ_g_lu = prd.ϕ_g_fun(x3, popt[0], popt[1])
+
+ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
+g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
+print('ϕ_max = ', ϕ_g_lu[-1])
 
 ##############################################################################
 # Plot some figures
