@@ -311,8 +311,15 @@ def holo_gen(*LabVIEW_data):
     # Phase mapping details (ϕ)
     ϕ_g_lu = fit_phase()
     ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
+<<<<<<< HEAD
     g_ϕ = interp1d(ϕ_g, np.linspace(0, 255, 256))
     ϕ_max = ϕ_g[-1]
+=======
+    g_ϕ = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
+    ϕ_max = ϕ_g_lu[-1]
+    ϕ_mid = ϕ_lw + (ϕ_up - ϕ_lw) / 2
+    print(ϕ_mid / np.pi)
+>>>>>>> 5c60244a1eac59f4bffe7f51527ff535f1e8c6a8
     # Define holo params
     Holo_params = (Λ, φ, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
 
@@ -326,9 +333,11 @@ def holo_gen(*LabVIEW_data):
     # Remap phase with non linear ϕ map
     ϕ1 = np.linspace(0, ϕ_max, 256)
     gs0 = g_ϕ(ϕ1)
+    g_mid = int(g_ϕ((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
+    g_mid_val, g_mid_idx = find_nearest(gs0, g_mid)
+    g_ind1 = gs0 <= g_ϕ(ϕ_lw + os_lw)
+    g_ind2 = gs0 >= g_ϕ(ϕ_up - os_up)
 
-    g_ind1 = gs0 < g_ϕ(ϕ_lw + os_lw)
-    g_ind2 = gs0 > g_ϕ(ϕ_up - os_up)
 
     gs1 = copy.copy(gs0)
     gs2 = copy.copy(gs0)
@@ -337,12 +346,19 @@ def holo_gen(*LabVIEW_data):
 
     gs1 = n_G_blurs(gs1, osw_lw)
     gs2 = n_G_blurs(gs2, osw_up)
-    g_mid = int(g_ϕ((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
 
-    gs3 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
+    gs3 = np.concatenate((gs1[0:g_mid_idx], gs2[g_mid_idx:]))
 
     g_ϕ1 = interp1d(ϕ1, gs3)
-
+    # plt.plot(ϕ1 / np.pi, gs0 + 5, '--')
+    # plt.plot(ϕ1 / np.pi, gs3,'.-')
+    # plt.plot(ϕ1 / np.pi, gs1, ':')
+    # plt.plot(ϕ1 / np.pi, gs2, ':')
+    # plt.plot([ϕ_lw / np.pi, ϕ_up / np.pi, ϕ_mid / np.pi],
+    #          [g_ϕ(ϕ_lw), g_ϕ(ϕ_up), g_ϕ(ϕ_mid)], 'o')
+    # plt.plot(gs1[0:g_mid])
+    # plt.plot(gs1)
+    plt.show()
     H1 = remap_phase(Z_mod, g_ϕ1)
     # Calculate full holograms (Holo_f)
     H2 = add_holo_LCOS(H_cy, H_cx, H1, L_δy, L_δx)
@@ -900,6 +916,10 @@ def sweep(values, Ps_current, variables, param=0):
                       min(values[14] + 4, 25))
         osw_up_rng = (max(0, values[15] - 4),
                       min(values[15] + 4, 25))
+        g_bot_rng = (max(0, values[19] - 10),
+                     min(values[19] + 10, 255))
+        g_top_rng = (max(0, values[20] - 10),
+                     min(values[20] + 10, 255))
 
         offset_rng = (0, 0.2)
         sin_amp_rng = (0, 0.2)
@@ -922,7 +942,9 @@ def sweep(values, Ps_current, variables, param=0):
                     osw_up_rng,
                     offset_rng,
                     sin_amp_rng,
-                    sin_off_rng]
+                    sin_off_rng,
+                    g_bot_rng,
+                    g_top_rng]
         rng_2_swp = all_rngs[param_2_swp]
         rng = np.linspace(rng_2_swp[0], rng_2_swp[1], pts)
         np.savetxt(param_swp_p, rng, delimiter=',')
@@ -1123,15 +1145,15 @@ def holo_load(f0, p1):
     osw_up = holo_data[15]
     off = holo_data[16]
 
-    g_min = 0
-    g_max = 255
+    g_min = holo_data[19]
+    g_max = holo_data[20]
 
     y_dB = np.genfromtxt(f1, delimiter=',')
     y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
     x0 = np.genfromtxt(f2, delimiter=',')
-    x1 = np.linspace(g_min, g_max, 25)
-    x3 = np.linspace(g_min, g_max, 256)
+    x1 = np.linspace(0, 255, 25)
+    x3 = np.linspace(0, 255, 256)
     f1 = interp1d(x0, y_lin)
     initial_guess = (15, 1 / 800)
 
