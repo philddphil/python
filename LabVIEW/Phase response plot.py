@@ -40,87 +40,81 @@ cs = prd.palette()
 ##############################################################################
 π = np.pi
 p1 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Phase response\python phase ramps\180319\Port 2")
+      r"\Phase response\python phase ramps\180319\Original")
 p2 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Phase response\python phase ramps\1551")
+      r"\Phase response\python phase ramps\180319\Port 2")
 p3 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
-      r"\Phase response\python phase ramps\1557")
+      r"\Phase response\python phase ramps\180319\Port 8")
+p4 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Phase response\python phase ramps\180319\Port 4")
+p5 = (r"C:\Users\Philip\Documents\Technical Stuff\Hologram optimisation"
+      r"\Phase response\python phase ramps\180319\Port 6")
+
 f1 = p1 + r"\Phase Ps.csv"
 f2 = p1 + r"\Phase greys.csv"
-f2 = p2 + r"\Phase Ps.csv"
-f3 = p3 + r"\Phase Ps.csv"
+f3 = p2 + r"\Phase Ps.csv"
+f4 = p3 + r"\Phase Ps.csv"
+f5 = p4 + r"\Phase Ps.csv"
+f6 = p5 + r"\Phase Ps.csv"
 
-y_dB = np.genfromtxt(f1, delimiter=',')
-y_lin1 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
-
-x0 = np.linspace(0, 255, len(y_lin1))
-x1 = np.linspace(0, 255, 25)
-x3 = np.linspace(0, 255, 256)
-
-f1 = interp1d(x0, y_lin1)
-initial_guess = (18, 1 / 850)
+fig1 = plt.figure('fig1', figsize=(3, 3))
+ax1 = fig1.add_subplot(1, 1, 1)
+fig1.patch.set_facecolor(cs['mdk_dgrey'])
 
 
-try:
-    popt, _ = opt.curve_fit(prd.P_g_fun, x1, f1(
-        x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]),
-        method='dogbox')
+files = [f3, f4, f5, f6]
+Ps_f = []
+Ps_exp = []
+for i1, val in enumerate(files):
+    port = (os.path.split(os.path.split(val)[0])[1])
+    number = re.findall(r'[-+]?\d+[\.]?\d*', port)
+    fibre = str(int(np.round(float(number[-1]))))
+    print(fibre)
+    label = 'port ' + fibre
+    fibre_c = 'fibre9d_' + fibre
 
-except RuntimeError:
-    print("Error - curve_fit failed")
+    y_dB = np.genfromtxt(val, delimiter=',')
+    y_lin1 = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
+    x0 = np.genfromtxt(f2, delimiter=',')
+    x1 = np.linspace(0, 255, 25)
+    x3 = np.linspace(0, 255, 256)
 
-P_g = prd.P_g_fun(x3, popt[0], popt[1])
-ϕ_g_lu = prd.ϕ_g_fun(x3, popt[0], popt[1])
+    f1 = interp1d(x0, y_lin1)
+    initial_guess = (16, 1 / 600)
+
+    try:
+        popt, _ = opt.curve_fit(prd.P_g_fun, x1, f1(
+            x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
+
+    except RuntimeError:
+        print("Error - curve_fit failed")
+
+    P_g = prd.P_g_fun(x3, popt[0], popt[1])
+    Ps_f.append(P_g)
+    Ps_exp.append(f1(x1))
+    ϕ_g_lu = prd.ϕ_g_fun(x3, popt[0], popt[1])
+    ax1.set_xlabel('x axis - greylevel')
+    ax1.set_ylabel('y axis - Power')
+    plt.plot(x0, y_lin1, '.-', c=cs[fibre_c])
+    plt.plot(x3, P_g, c=cs[fibre_c])
+
 
 ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
 g_ϕ = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
-print('ϕ_max = ', ϕ_g_lu[-1]/np.pi)
+print('ϕ_max = ', ϕ_g_lu[-1] / np.pi)
 
 ##############################################################################
 # Plot some figures
 ##############################################################################
 
-# a = 50
 
-# fig0 = plt.figure('fig0')
-# ax0 = Axes3D(fig0)
-# fig0.patch.set_facecolor(cs['mdk_dgrey'])
-# ax0.w_xaxis.set_pane_color(cs['mdk_dgrey'])
-# ax0.w_yaxis.set_pane_color(cs['mdk_dgrey'])
-# ax0.w_zaxis.set_pane_color(cs['mdk_dgrey'])
-# ax0.set_xlabel('x axis')
-# ax0.set_ylabel('y axis')
-# ax0.set_zlabel('z axis')
-# scat0 = ax0.scatter(X[:, 0:a], Y[:, 0:a], Z1[:, 0:a],
-#                     '.', cmap='gray', s=6, c=Z1_mod)
-# ggred = scat0.get_facecolor()
-
-# cm = plt.get_cmap('binary')
-# surf0 = ax0.plot_surface(X[:, 0:a], Y[:, 0:a], Z1[
-#                          :, 0:a], cmap='gray', alpha=0.6)
-# wire0 = ax0.plot_wireframe(X[:, 0:a], Y[:, 0:a], Z1[
-#     :, 0:a], color=cs['mdk_dgrey'], lw=0.5, alpha=1)
-
-fig1 = plt.figure('fig1', figsize=(3, 3))
-ax1 = fig1.add_subplot(1, 1, 1)
-fig1.patch.set_facecolor(cs['mdk_dgrey'])
-ax1.set_xlabel('x axis - greylevel')
-# ax1.set_ylabel('y axis - phase/π')
-ax1.set_ylabel('y axis - Power')
-
-# ax1.set_xlabel('x axis - g')
-# ax1.set_ylabel('y axis - P')
-
-# plt.plot(ϕ_g/π,'.:', c=cs['ggblue'])
-
-plt.plot(x0, y_lin1, '.', label='1543', c=cs['ggred'])
-plt.plot(x3, P_g, label='1543 fit', c=cs['gglred'])
-plt.plot(x3, f1(x3), lw=0.5, label='1543 fit', c=cs['ggdred'])
-
-# plt.plot(x3, ϕ_gi, label='1543 fit', c=cs['ggdred'])
-# plt.plot(x0, y_lin2, '.', label='1551', c=cs['ggblue'])
-# plt.plot(x0, y_lin3, '.', label='1557', c=cs['ggpurple'])
-plt.legend()
+# fig2 = plt.figure('fig2', figsize=(3, 3))
+# ax2 = fig2.add_subplot(1, 1, 1)
+# fig2.patch.set_facecolor(cs['mdk_dgrey'])
+# ax2.set_xlabel('x axis - greylevel')
+# ax2.set_ylabel('y axis - Power')
+# plt.plot(x0, y_lin1, '.', label='1543', c=cs['ggred'])
+# plt.legend()
 
 # plt.plot(H2[0, :], 'o:')
 # plt.ylim(0, 255)
