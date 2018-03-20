@@ -4,7 +4,6 @@
 import glob
 import copy
 import random
-import re
 
 import numpy as np
 import scipy as sp
@@ -1151,7 +1150,7 @@ def holo_load(f0, p1):
     x1 = np.linspace(0, 255, 25)
     x3 = np.linspace(0, 255, 256)
     f1 = interp1d(x0, y_lin)
-    initial_guess = (15, 1 / 800)
+    initial_guess = (16, 1 / 600)
 
     try:
         popt, _ = opt.curve_fit(P_g_fun, x1, f1(
@@ -1167,7 +1166,7 @@ def holo_load(f0, p1):
 
     Z1 = phase_tilt(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off)
     Z1a = phase_tilt(Λ, π / 2, H_δx, H_δy, ϕ_lw, ϕ_up, off)
-    Z2 = phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
+    # Z2 = phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
     Z1_mod = phase_mod(Z1, ϕ_lw, ϕ_up)
     Z1a_mod = phase_mod(Z1a, ϕ_lw, ϕ_up)
 
@@ -1188,24 +1187,25 @@ def holo_load(f0, p1):
     g_mid = int(g_ϕ0((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
 
     gs3 = np.concatenate((gs1b[0:g_mid], gs2b[g_mid:]))
-    gs4 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
+    # gs4 = np.concatenate((gs1[0:g_mid], gs2[g_mid:]))
 
     g_ϕ1 = interp1d(ϕ1, gs3)
 
-    Z12_mod = phase_mod(Z1 + Z2, ϕ_lw, ϕ_up)
-    H1 = remap_phase(Z1_mod, g_ϕ0)
-    H1a = remap_phase(Z1a_mod, g_ϕ0)
+    # Z12_mod = phase_mod(Z1 + Z2, ϕ_lw, ϕ_up)
+    # H1 = remap_phase(Z1_mod, g_ϕ0)
+    # H1a = remap_phase(Z1a_mod, g_ϕ0)
     H2 = remap_phase(Z1_mod, g_ϕ1)
     H2a = remap_phase(Z1a_mod, g_ϕ1)
     Zf = ϕ_g(H2)
     Zfa = ϕ_g(H2a)
-    Profile1 = ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]) - min(ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]))
+    # Profile1 = ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]) - min(ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]))
 
     # plt.plot(Profile1/π, '.-', c=cs[fibre_c])
     # plt.plot(ϕ1 / π, gs3, c=cs[fibre_c])
     return H2, Zf, H2a, Zfa
 
 
+# Generate holograms based on a set of parameters specified in the defn #######
 def holo_gen_param(p1):
     # f0 is the csv file, p0 is the phase mapping file
     π = np.pi
@@ -1213,7 +1213,7 @@ def holo_gen_param(p1):
     f2 = p1 + r'\Phase greys.csv'
 
     Λ = 10
-    φ = 90 * (np.pi / 180)
+    φ = 91.98 * (np.pi / 180)
     H_δx = 50
     H_δy = 50
     ϕ_lw = π * 0.5
@@ -1234,7 +1234,7 @@ def holo_gen_param(p1):
     x1 = np.linspace(g_min, g_max, 25)
     x3 = np.linspace(g_min, g_max, 256)
     f1 = interp1d(x0, y_lin)
-    initial_guess = (15, 1 / 800)
+    initial_guess = (16, 1 / 600)
 
     try:
         popt, _ = opt.curve_fit(P_g_fun, x1, f1(
@@ -1251,7 +1251,7 @@ def holo_gen_param(p1):
 
     Z1 = phase_tilt(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off)
     Z1a = phase_tilt(Λ, π / 2, H_δx, H_δy, ϕ_lw, ϕ_up, off)
-    Z2 = phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
+    # Z2 = phase_sin(Λ, φ, H_δx, H_δy, ϕ_lw, ϕ_up, off, 0.5, 0)
     Z1_mod = phase_mod(Z1, ϕ_lw, ϕ_up)
     Z1a_mod = phase_mod(Z1a, ϕ_lw, ϕ_up)
 
@@ -1279,15 +1279,14 @@ def holo_gen_param(p1):
     H2a = remap_phase(Z1a_mod, g_ϕ1)
     Zf = ϕ_g(H2)
     Zfa = ϕ_g(H2a)
-    Profile1 = ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]) - min(ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]))
+    # Profile1 = ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]) - min(ϕ_g(H2a[Λ + 1:2 * Λ + 1, 0]))
 
     # plt.plot(Profile1/π, '.-', c=cs[fibre_c])
     # plt.plot(ϕ1 / π, gs3, c=cs[fibre_c])
     return H2, Zf, H2a, Zfa
 
+
 # Calculate the replay field of a fibre##.csv hologram description file #######
-
-
 def holo_replay_file(f0, p1):
     π = np.pi
     px_edge = 0  # blurring of rect function - bigger = blurier
@@ -1300,16 +1299,6 @@ def holo_replay_file(f0, p1):
 
     holo_data = np.genfromtxt(f0, delimiter=',')
     Λ = holo_data[0]
-    φ = (np.pi / 180) * holo_data[1]
-    H_δx = int(holo_data[4])
-    H_δy = int(holo_data[5])
-    ϕ_lw = π * holo_data[10]
-    ϕ_up = π * holo_data[11]
-    os_lw = π * holo_data[12]
-    os_up = π * holo_data[13]
-    osw_lw = holo_data[14]
-    osw_up = holo_data[15]
-    off = holo_data[16]
 
     ##########################################################################
     # CODE STRUCTURE
@@ -1454,12 +1443,206 @@ def holo_replay_file(f0, p1):
     FFT_y_ax = (1e6 / Ratio1) * np.linspace(-RePl_y / 2, RePl_y / 2,
                                             np.shape(I2_final)[1])
 
+    # plt.figure('fig1')
+    # plt.plot(LCOS_y_ax_padded[2 * (px_pad + 0.5) * (Λ + 1) - 2:
+    #                           2 * (px_pad) * (2 * Λ + 1) + 12],
+    #          phase_SLM_20[2 * (px_pad + 0.5) * (Λ + 1) - 2:
+    #                       2 * (px_pad) * (2 * Λ + 1) + 12, 0] / π, '.:')
+    # plt.plot(LCOS_y_ax[Λ + 1:2 * Λ + 1], Z0[Λ + 1:2 * Λ + 1, 0] / π, 'o')
+    # plt.tight_layout()
+
+    # plt.figure('fig2')
+    # plt.imshow(I2_final_dB, extent=extents(FFT_x_ax) + extents(FFT_y_ax))
+    # plt.tight_layout()
+
+    # plt.figure('fig3')
+    # plt.plot(FFT_x_ax, I2_final_dB[:, 100])
+    # plt.plot(FFT_x_ax, I2_final_dB[100, :])
+    # plt.plot(FFT_x_ax, np.diagonal(I2_final_dB))
+
+    # plt.tight_layout()
+
+    # plt.figure('fig4')
+    # plt.imshow(abs(phase_SLM_2),
+    #            extent=extents(LCOS_x_ax_padded) + extents(LCOS_y_ax_padded))
+    # plt.tight_layout()
+
+    # plt.figure('fig5')
+    # plt.imshow(R0[np.shape(R0)[0] / 2 - 2 * px_pad:
+    #               np.shape(R0)[0] / 2 + 2 * px_pad,
+    #               np.shape(R0)[1] / 2 - 2 * px_pad:
+    #               np.shape(R0)[1] / 2 + 2 * px_pad])
+    # plt.tight_layout()
+
+    # plt.figure('fig6')
+    # plt.imshow(H, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
+    # plt.tight_layout()
+
+    # plt.figure('fig7')
+    # plt.imshow(H0, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
+    # plt.tight_layout()
+
+    return I2_final, FFT_x_ax, FFT_y_ax
+
+
+# Calculate the replay field of a phase pattern, Z
+def holo_replay_Z(Z, Λ):
+    π = np.pi
+    px_edge = 0  # blurring of rect function - bigger = blurier
+    px_pad = 8
+    fft_pad = 4
+    px = 6.4e-6
+    λ = 1.55e-6
+    f = 9.1e-3
+    w = 60
+
+    ##########################################################################
+    # CODE STRUCTURE
+    ##########################################################################
+    # Function 1 - generation of base hologram
+    # Function 2 - define Gaussian intensity profile (2D)
+    # Function 3 - add psf of pixels of SLM
+    #            - plots (i)
+    # Function 4 - replay field calculation.
+    # Function 5 - CEF calculation.
+    #            - plots (ii)
+
+    ##########################################################################
+    # 1 - Generate Hologram
+    ##########################################################################
+    H_δx = np.shape(Z)[0]
+    H_δy = np.shape(Z)[1]
+    LCx = np.shape(Z)[0] * (2 * px_pad + 1)
+    LCy = np.shape(Z)[1] * (2 * px_pad + 1)
+    LC_field = Pad_A_elements(Z, px_pad)
+
+    SLM_x = range(LCx)
+    SLM_y = range(LCy)
+    coords = np.meshgrid(SLM_x, SLM_y)
+
+    ##########################################################################
+    # 2 - Define Gaussian intensity profile (2D)
+    ##########################################################################
+    G1 = Gaussian_2D(coords, 1, LCx / 2, LCy / 2,
+                     0.25 * w * (2 * px_pad + 1),
+                     0.25 * w * (2 * px_pad + 1))
+    E_field = np.reshape(G1, (LCx, LCy))
+    (LC_cx, LC_cy) = max_i_2d(E_field)
+
+    ##########################################################################
+    # 3 - Generate PSF
+    ##########################################################################
+    # Calculate phase profile for NTxNT points by convolving Np with the psf
+    # Define a point-spread function representing each pixel
+    R0 = np.zeros((LCx, LCy))
+    R0[LC_cx - px_pad:LC_cx + px_pad + 1,
+        LC_cy - px_pad:LC_cy + px_pad + 1] = 1
+    R0 = n_G_blurs(R0, 1, px_edge)
+
+    # Define new phase profile
+    phase_SLM_1 = np.fft.fftshift(np.fft.fft2(
+        np.fft.fftshift(LC_field))) * \
+        np.fft.fftshift(np.fft.fft2(np.fft.fftshift(R0)))
+    phase_SLM_2 = np.fft.fftshift(
+        np.fft.ifft2(np.fft.fftshift(phase_SLM_1)))
+
+    phase_SLM_10 = np.fft.fftshift(np.fft.fft2(
+        np.fft.fftshift(LC_field))) * \
+        np.fft.fftshift(np.fft.fft2(np.fft.fftshift(R0)))
+    phase_SLM_20 = np.fft.fftshift(
+        np.fft.ifft2(np.fft.fftshift(phase_SLM_10)))
+
+    ##########################################################################
+    # 4 - Calculate replay field
+    ##########################################################################
+    # Define phase distribution when there is no hologram displayed
+    SLM_zero = np.zeros([LCx, LCy])
+
+    # Define zero padding factor, pad, and generate associated replay field
+    # calaculation matrices
+    E_calc = np.zeros([fft_pad * LCx, fft_pad * LCy])
+    E_calc_phase = np.zeros([fft_pad * LCx, fft_pad * LCy]) * 0j
+    E_calc_amplt = E_calc_phase
+
+    # Calculation of replay field when no grating is displayed ###############
+    E_calc_phase[0:LCx, 0:LCy] = SLM_zero[:, :]
+    E_calc_amplt[0:LCx, 0:LCy] = E_field[:, :]
+    E_replay_zero = np.fft.fftshift(
+        np.fft.fft2(np.fft.fftshift(E_calc_amplt *
+                                    np.exp(1j * E_calc_phase))))
+    I_replay_zero = (abs(E_replay_zero))**2
+
+    # Maximum intensity
+    I_max_zero = np.max(np.max(I_replay_zero))
+
+    # Normalized replay field
+    I_replay_zero = I_replay_zero / I_max_zero
+    E_calc_phase = E_calc * 0j
+
+    # Calculation of replay field when grating is displayed ##################
+    E_calc_phase[0:LCx, 0:LCy] = phase_SLM_2[:, :]
+    E_calc_amplt[0:LCx, 0:LCy] = E_field[:, :]
+    E_replay = np.fft.fftshift(np.fft.fft2(
+        np.fft.fftshift(E_calc_amplt * np.exp(1j * E_calc_phase))))
+    I_replay = (abs(E_replay))**2
+    # Maximum intensity
+    I_max_signal = np.max(np.max(I_replay))
+    # Replay intensity distribution normalized with respect to the
+    # undiffracted zeroth order
+    I_replay = I_replay / I_max_zero
+
+    # Corresponding insertion loss
+    Loss = I_max_signal / I_max_zero
+    print('Loss = ', Loss)
+
+    I1_final = np.zeros([200, 200])
+    I1_final = I_replay_zero[int(LCx * fft_pad / 2 - 100):
+                             int(LCx * fft_pad / 2 + 100),
+                             int(LCy * fft_pad / 2 - 100):
+                             int(LCy * fft_pad / 2 + 100)]
+    I1_final_dB = 10 * np.log10(I1_final)
+    I1_final_dB[I1_final_dB < -60] = -60
+
+    I2_final = np.zeros([200, 200])
+    I2_final = I_replay[int(LCx * fft_pad / 2 - 100):
+                        int(LCx * fft_pad / 2 + 100),
+                        int(LCy * fft_pad / 2 - 100):
+                        int(LCy * fft_pad / 2 + 100)]
+    I2_final_dB = 10 * np.log10(I2_final)
+    I2_final_dB[I2_final_dB < -60] = -60
+
+    # Generate axis
+    Ratio2 = np.shape(phase_SLM_2)[0] / np.shape(Z)[0]
+    Ratio1 = np.shape(I_replay)[0] / np.shape(I2_final)[0]
+
+    LCOS_x = (H_δx + 1) * px
+    LCOS_y = (H_δy + 1) * px
+
+    RePl_x = (f * λ) / (px / Ratio2)
+    RePl_y = (f * λ) / (px / Ratio2)
+
+    LCOS_x_ax_padded = 1e6 * np.linspace(-LCOS_x / 2, LCOS_x / 2,
+                                         np.shape(phase_SLM_2)[0])
+    LCOS_x_ax = np.linspace(-1e6 * H_δx * px / 2,
+                            1e6 * H_δx * px / 2, H_δx)
+
+    LCOS_y_ax_padded = 1e6 * np.linspace(-LCOS_y / 2, LCOS_y / 2,
+                                         np.shape(phase_SLM_2)[1])
+    LCOS_y_ax = np.linspace(-1e6 * H_δy * px / 2,
+                            1e6 * H_δy * px / 2, H_δy)
+
+    FFT_x_ax = (1e6 / Ratio1) * np.linspace(-RePl_x / 2, RePl_x / 2,
+                                            np.shape(I2_final)[0])
+
+    FFT_y_ax = (1e6 / Ratio1) * np.linspace(-RePl_y / 2, RePl_y / 2,
+                                            np.shape(I2_final)[1])
+
     plt.figure('fig1')
     plt.plot(LCOS_y_ax_padded[2 * (px_pad + 0.5) * (Λ + 1) - 2:
                               2 * (px_pad) * (2 * Λ + 1) + 12],
              phase_SLM_20[2 * (px_pad + 0.5) * (Λ + 1) - 2:
                           2 * (px_pad) * (2 * Λ + 1) + 12, 0] / π, '.:')
-    plt.plot(LCOS_y_ax[Λ + 1:2 * Λ + 1], Z0[Λ + 1:2 * Λ + 1, 0] / π, 'o')
+    plt.plot(LCOS_y_ax[Λ + 1:2 * Λ + 1], Z[Λ + 1:2 * Λ + 1, 0] / π, 'o')
     plt.tight_layout()
 
     plt.figure('fig2')
@@ -1486,11 +1669,7 @@ def holo_replay_file(f0, p1):
     plt.tight_layout()
 
     plt.figure('fig6')
-    plt.imshow(H, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
-    plt.tight_layout()
-
-    plt.figure('fig7')
-    plt.imshow(H0, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
+    plt.imshow(Z, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
     plt.tight_layout()
 
     return I2_final, FFT_x_ax, FFT_y_ax
