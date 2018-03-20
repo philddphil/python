@@ -55,6 +55,7 @@ while True:
         variables = re.findall(r'\s(\D*)', hol_data)
         values = prd.variable_unpack(LabVIEW_data)
         hol_values = dict(zip(variables, values))
+        print(hol_values)
         H = prd.holo_gen(*LabVIEW_data)
         conn.sendall(b'PLAY-DONE')
         t2 = 1000 * time.time()

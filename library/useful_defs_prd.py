@@ -311,7 +311,6 @@ def holo_gen(*LabVIEW_data):
     # Phase mapping details (ϕ)
     ϕ_g_lu = fit_phase()
     ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
-    ϕ_max = ϕ_g[-1]
     g_ϕ = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
     ϕ_max = ϕ_g_lu[-1]
     ϕ_mid = ϕ_lw + (ϕ_up - ϕ_lw) / 2
@@ -334,7 +333,6 @@ def holo_gen(*LabVIEW_data):
     g_ind1 = gs0 <= g_ϕ(ϕ_lw + os_lw)
     g_ind2 = gs0 >= g_ϕ(ϕ_up - os_up)
 
-
     gs1 = copy.copy(gs0)
     gs2 = copy.copy(gs0)
     gs1[g_ind1] = g_bot
@@ -354,7 +352,7 @@ def holo_gen(*LabVIEW_data):
     #          [g_ϕ(ϕ_lw), g_ϕ(ϕ_up), g_ϕ(ϕ_mid)], 'o')
     # plt.plot(gs1[0:g_mid])
     # plt.plot(gs1)
-    plt.show()
+    # plt.show()
     H1 = remap_phase(Z_mod, g_ϕ1)
     # Calculate full holograms (Holo_f)
     H2 = add_holo_LCOS(H_cy, H_cx, H1, L_δy, L_δx)
@@ -504,7 +502,7 @@ def fit_phase():
     x1 = np.linspace(0, 255, 25)
     x3 = np.linspace(0, 255, 256)
     f1 = interp1d(x0, y_lin)
-    initial_guess = (15, 1 / 800)
+    initial_guess = (16, 1 / 650)
 
     try:
         popt, _ = opt.curve_fit(P_g_fun, x1, f1(
@@ -512,7 +510,9 @@ def fit_phase():
 
     except RuntimeError:
         print("Error - curve_fit failed")
-
+    # plt.plot(x3, P_g_fun(x3, popt[0], popt[1]))
+    # plt.plot(x1, f1(x1), '.')
+    # plt.show()
     ϕ_g = ϕ_g_fun(x3, popt[0], popt[1])
 
     return ϕ_g
