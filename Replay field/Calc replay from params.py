@@ -324,9 +324,9 @@ print('Replay Field plot size = ', RePl_x * 1e6 / Ratio1)
 f1 = p1 + '\Replay_field.csv'
 f2 = p1 + '\Replay_x.csv'
 f3 = p1 + '\Replay_y.csv'
-np.savetxt(f1, I2_final)
-np.savetxt(f2, FFT_x_ax)
-np.savetxt(f3, FFT_y_ax)
+np.savetxt(f1, I2_final, delimiter=',')
+np.savetxt(f2, FFT_x_ax, delimiter=',')
+np.savetxt(f3, FFT_y_ax, delimiter=',')
 ##############################################################################
 # aside - plots (ii)
 ##############################################################################

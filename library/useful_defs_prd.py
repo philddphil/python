@@ -1213,9 +1213,9 @@ def holo_gen_param(p1):
     f2 = p1 + r'\Phase greys.csv'
 
     Λ = 10
-    φ = 91.98 * (np.pi / 180)
-    H_δx = 50
-    H_δy = 50
+    φ = 90* (np.pi / 180)
+    H_δx = 100
+    H_δy = 100
     ϕ_lw = π * 0.5
     ϕ_up = π * 2.5
     os_lw = π * -0.1
@@ -1289,13 +1289,14 @@ def holo_gen_param(p1):
 # Calculate the replay field of a fibre##.csv hologram description file #######
 def holo_replay_file(f0, p1):
     π = np.pi
-    px_edge = 0  # blurring of rect function - bigger = blurier
+    px_edge = 80  # blurring of rect function - bigger = blurier
     px_pad = 8
     fft_pad = 4
     px = 6.4e-6
     λ = 1.55e-6
     f = 9.1e-3
-    w = 60
+    w = 70
+    cs = palette()
 
     holo_data = np.genfromtxt(f0, delimiter=',')
     Λ = holo_data[0]
@@ -1443,14 +1444,12 @@ def holo_replay_file(f0, p1):
     FFT_y_ax = (1e6 / Ratio1) * np.linspace(-RePl_y / 2, RePl_y / 2,
                                             np.shape(I2_final)[1])
 
-    # plt.figure('fig1')
-    # plt.plot(LCOS_y_ax_padded[2 * (px_pad + 0.5) * (Λ + 1) - 2:
-    #                           2 * (px_pad) * (2 * Λ + 1) + 12],
-    #          phase_SLM_20[2 * (px_pad + 0.5) * (Λ + 1) - 2:
-    #                       2 * (px_pad) * (2 * Λ + 1) + 12, 0] / π, '.:')
-    # plt.plot(LCOS_y_ax[Λ + 1:2 * Λ + 1], Z0[Λ + 1:2 * Λ + 1, 0] / π, 'o')
-    # plt.tight_layout()
-
+    plt.figure('fig2')
+    plt.plot(LCOS_y_ax_padded,
+             phase_SLM_20[:, 0] / π, '.:')
+    plt.plot(LCOS_y_ax, Z0[:, 0] / π, 'o') 
+    plt.title('SLM phase from file', size=8, color=cs['mdk_dgrey'])
+    plt.tight_layout()
     # plt.figure('fig2')
     # plt.imshow(I2_final_dB, extent=extents(FFT_x_ax) + extents(FFT_y_ax))
     # plt.tight_layout()
@@ -1462,10 +1461,10 @@ def holo_replay_file(f0, p1):
 
     # plt.tight_layout()
 
-    # plt.figure('fig4')
-    # plt.imshow(abs(phase_SLM_2),
-    #            extent=extents(LCOS_x_ax_padded) + extents(LCOS_y_ax_padded))
-    # plt.tight_layout()
+    plt.figure('fig3')
+    plt.imshow(abs(phase_SLM_2),
+               extent=extents(LCOS_x_ax_padded) + extents(LCOS_y_ax_padded))
+    plt.tight_layout()
 
     # plt.figure('fig5')
     # plt.imshow(R0[np.shape(R0)[0] / 2 - 2 * px_pad:
@@ -1482,19 +1481,20 @@ def holo_replay_file(f0, p1):
     # plt.imshow(H0, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
     # plt.tight_layout()
 
-    return I2_final, FFT_x_ax, FFT_y_ax
+    return I2_final, FFT_x_ax, FFT_y_ax, abs(phase_SLM_2)
 
 
 # Calculate the replay field of a phase pattern, Z
-def holo_replay_Z(Z, Λ):
+def holo_replay_Z(Z):
     π = np.pi
-    px_edge = 0  # blurring of rect function - bigger = blurier
+    px_edge = 80 # blurring of rect function - bigger = blurier
     px_pad = 8
     fft_pad = 4
     px = 6.4e-6
     λ = 1.55e-6
     f = 9.1e-3
-    w = 60
+    w = 70
+    cs = palette()
 
     ##########################################################################
     # CODE STRUCTURE
@@ -1638,41 +1638,38 @@ def holo_replay_Z(Z, Λ):
                                             np.shape(I2_final)[1])
 
     plt.figure('fig1')
-    plt.plot(LCOS_y_ax_padded[2 * (px_pad + 0.5) * (Λ + 1) - 2:
-                              2 * (px_pad) * (2 * Λ + 1) + 12],
-             phase_SLM_20[2 * (px_pad + 0.5) * (Λ + 1) - 2:
-                          2 * (px_pad) * (2 * Λ + 1) + 12, 0] / π, '.:')
-    plt.plot(LCOS_y_ax[Λ + 1:2 * Λ + 1], Z[Λ + 1:2 * Λ + 1, 0] / π, 'o')
+    plt.plot(LCOS_y_ax_padded, phase_SLM_20[:, 0] / π, '.:')
+    plt.plot(LCOS_y_ax, Z[:, 0] / π, 'o')
+    plt.title('SLM phase from params', size=8, color=cs['mdk_dgrey'])
     plt.tight_layout()
+    # plt.figure('fig2')
+    # plt.imshow(I2_final_dB, extent=extents(FFT_x_ax) + extents(FFT_y_ax))
+    # plt.tight_layout()
 
-    plt.figure('fig2')
-    plt.imshow(I2_final_dB, extent=extents(FFT_x_ax) + extents(FFT_y_ax))
-    plt.tight_layout()
+    # plt.figure('fig3')
+    # plt.plot(FFT_x_ax, I2_final_dB[:, 100])
+    # plt.plot(FFT_x_ax, I2_final_dB[100, :])
+    # plt.plot(FFT_x_ax, np.diagonal(I2_final_dB))
 
-    plt.figure('fig3')
-    plt.plot(FFT_x_ax, I2_final_dB[:, 100])
-    plt.plot(FFT_x_ax, I2_final_dB[100, :])
-    plt.plot(FFT_x_ax, np.diagonal(I2_final_dB))
-
-    plt.tight_layout()
+    # plt.tight_layout()
 
     plt.figure('fig4')
     plt.imshow(abs(phase_SLM_2),
                extent=extents(LCOS_x_ax_padded) + extents(LCOS_y_ax_padded))
     plt.tight_layout()
 
-    plt.figure('fig5')
-    plt.imshow(R0[np.shape(R0)[0] / 2 - 2 * px_pad:
-                  np.shape(R0)[0] / 2 + 2 * px_pad,
-                  np.shape(R0)[1] / 2 - 2 * px_pad:
-                  np.shape(R0)[1] / 2 + 2 * px_pad])
-    plt.tight_layout()
+    # plt.figure('fig5')
+    # plt.imshow(R0[np.shape(R0)[0] / 2 - 2 * px_pad:
+    #               np.shape(R0)[0] / 2 + 2 * px_pad,
+    #               np.shape(R0)[1] / 2 - 2 * px_pad:
+    #               np.shape(R0)[1] / 2 + 2 * px_pad])
+    # plt.tight_layout()
 
-    plt.figure('fig6')
-    plt.imshow(Z, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
-    plt.tight_layout()
+    # plt.figure('fig6')
+    # plt.imshow(Z, extent=extents(LCOS_x_ax) + extents(LCOS_y_ax))
+    # plt.tight_layout()
 
-    return I2_final, FFT_x_ax, FFT_y_ax
+    return I2_final, FFT_x_ax, FFT_y_ax, abs(phase_SLM_2)
 
 
 ###############################################################################
