@@ -45,9 +45,9 @@ while True:
         data_out = ϕ_min + ',' + ϕ_max
         conn.sendall(bytes(data_out, 'utf-8'))
 
-    elif 'DISP' in str(cmnd):
-        # Display a hologram
-        print('DISP')
+    elif 'GEN' in str(cmnd):
+        # Generate a hologram and save it as a bmp
+        print('GEN')
         t1 = 1000 * time.time()
         hol_data = str(cmnd)
         LabVIEW_data = [float(i1)
