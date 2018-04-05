@@ -231,6 +231,7 @@ def extents(f):
 ###############################################################################
 # Overshoot mapping ###########################################################
 def overshoot_phase(H1, g_OSlw, g_OSup, g_min, g_max):
+    # Legacy code - not used anymore 
     H2 = copy.copy(H1)
     Super_thres_indices = H1 > g_OSup
     Sub_thres_indices = H1 <= g_OSlw
@@ -241,6 +242,8 @@ def overshoot_phase(H1, g_OSlw, g_OSup, g_min, g_max):
 
 # Upack values from Hologram control sent by LabVIEW ##########################
 def variable_unpack(LabVIEW_data):
+    # Unpacks the LabVIEW data sent over the TCP/IP server connection
+    # See 'LabVIEW_python_server.py' for how LabVIEW_data is recieved
     Λ = LabVIEW_data[0]
     φ = LabVIEW_data[1]
 
@@ -307,24 +310,34 @@ def holo_gen(*LabVIEW_data):
     g_bot = LabVIEW_data[19]
     g_top = LabVIEW_data[20]
 
-    # Phase mapping details (ϕ)
+    # Perform phase map fitting - ϕ_g_lu is a look-up table of greylvl -> ϕ
     ϕ_g_lu = fit_phase()
+    # Converts the look-up table to a function (ϕ_g), along with inverse (g_ϕ)
     ϕ_g = interp1d(np.linspace(0, 255, 256), ϕ_g_lu)
     g_ϕ = interp1d(ϕ_g_lu, np.linspace(0, 255, 256))
+
+    # Grab maximum phase LCOS can apply, and mid point of range selected
     ϕ_max = ϕ_g_lu[-1]
     ϕ_mid = ϕ_lw + (ϕ_up - ϕ_lw) / 2
 
     # Define holo params
     Holo_params = (Λ, φ, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
 
-    # Calculate sub hologram (Holo_s)
     # t1 = 1000 * time.time()
     # print(int(t1))
+
+    # Calculate phase profiles for sub-holograms. Done seperately for grating
+    # - and additional sinusiod. 
     Z1 = phase_tilt(*Holo_params)
     Z2 = phase_sin(*Holo_params, sin_amp, sin_off)
+
+    # Once separately calculated the phase profiles are added and modulated
     Z_mod = phase_mod(Z2 + Z1, ϕ_lw, ϕ_up)
+
     # print('generating subhologram = ', int(t2 - t1))
     # Remap phase with non linear ϕ map
+    
+    # create a new map of ϕ -> greylvl (g_ϕ1) which includes overshooting
     ϕ1 = np.linspace(0, ϕ_max, 256)
     gs0 = g_ϕ(ϕ1)
     g_mid = int(g_ϕ((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
@@ -343,25 +356,23 @@ def holo_gen(*LabVIEW_data):
     gs3 = np.concatenate((gs1[0:g_mid_idx], gs2[g_mid_idx:]))
 
     g_ϕ1 = interp1d(ϕ1, gs3)
-    # plt.plot(ϕ1 / np.pi, gs0 + 5, '--')
-    # plt.plot(ϕ1 / np.pi, gs3,'.-')
-    # plt.plot(ϕ1 / np.pi, gs1, ':')
-    # plt.plot(ϕ1 / np.pi, gs2, ':')
-    # plt.plot([ϕ_lw / np.pi, ϕ_up / np.pi, ϕ_mid / np.pi],
-    #          [g_ϕ(ϕ_lw), g_ϕ(ϕ_up), g_ϕ(ϕ_mid)], 'o')
-    # plt.plot(gs1[0:g_mid])
-    # plt.plot(gs1)
-    # plt.show()
+
+    # Generate sub hologram H1 by using the new ϕ -> g map on the 
+    # phase profile Z_mod
     H1 = remap_phase(Z_mod, g_ϕ1)
-    # Calculate full holograms (Holo_f)
+
+    # Add the sub hologram to a larger field to be projected on the LCOS
     H2 = add_holo_LCOS(H_cy, H_cx, H1, L_δy, L_δx)
 
-    # Save output
     # t3 = 1000 * time.time()
     # print('generating bitmap = ', int(t3 - t2))
+
+    # Save output
     save_bmp(H2, r"..\..\Data\bmps\hologram")
+
     # t4 = 1000 * time.time()
     # print('saving bitmap =', int(t4 - t3))
+
     # Get phase profile plots and save (use angle of ϕ = π/2 for plotting)
     Z1a = phase_tilt(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw, ϕ_up, offset)
     Z2a = phase_sin(Λ, np.pi / 2, H_δy, H_δx, ϕ_lw,
@@ -377,8 +388,15 @@ def holo_gen(*LabVIEW_data):
 
     np.savetxt(r'..\..\Data\Calibration files\greyprofile3.csv',
                h3_0, delimiter=',')
+
     # t5 = 1000 * time.time()
     # print('total holo_gen time =', int(t5 - t1))
+
+    # Outputs:
+    # H1 - subhologram given in greylvls
+    # Z1f - phase profile of H1 (given in phase)
+    # H1a - subhologram H1 in greylvls, with π/2 rotation (to get 1D profile)
+    # Z1fa - subhologram in phasem, with π/2 rotation (to get 1D profile)
     return H1, Z1f, H1a, Z1fa
 
 
@@ -430,9 +448,14 @@ def phase_mod(Z, ϕ_lwlim=0, ϕ_uplim=2 * np.pi):
 def add_holo_LCOS(H_cy, H_cx, Z_mod, LCOSy, LCOSx):
     LCOSy = int(LCOSy)
     LCOSx = int(LCOSx)
+    # Generate kernal (b0) and tile for background pattern of LCOS
     b0 = np.array([0, 255])
     Holo_f = np.tile(b0, (LCOSy, int(LCOSx / len(b0))))
+
+    # Alternatively make LCOS background pattern 0s
     # Holo_f = np.zeros((LCOSy,LCOSx))
+    
+    # Take care of situations where subhologram extends beyond LCOS
     dy1 = 0
     dy2 = 0
     dx1 = 0
@@ -491,30 +514,40 @@ def g_ϕ_fun(ϕ, A, B):
 def fit_phase():
     # f1 = r'C:\Users\Philip\Documents\LabVIEW\Data\Calibration
     # files\Phaseramp.mat'
+    # Location of binary phase ramp results (Powers, 'Ps' & grey lvls)
     f1 = r'..\..\Data\Calibration files\Phase Ps.csv'
     f2 = r'..\..\Data\Calibration files\Phase greys.csv'
 
+    # If CT400 is used powers are in dB, so convert to mW (i.e. y_lin)
     y_dB = np.genfromtxt(f1, delimiter=',')
     y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
+    # Import grey lvls used in experiment, generate a few different ranges
     x0 = np.genfromtxt(f2, delimiter=',')
     x1 = np.linspace(0, 255, 25)
-    x3 = np.linspace(0, 255, 256)
+    x2 = np.linspace(0, 255, 256)
+
+    # Interpolate experimental results
     f1 = interp1d(x0, y_lin)
+
+    # Initial guess for coefficients in function P_g_fun
     initial_guess = (16, 1 / 650)
 
+    # Use try/except statement. ATM failure will probably crash LabVIEW 
     try:
         popt, _ = opt.curve_fit(P_g_fun, x1, f1(
             x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
 
     except RuntimeError:
         print("Error - curve_fit failed")
-    # plt.plot(x3, P_g_fun(x3, popt[0], popt[1]))
+    # plt.plot(x3, P_g_fun(x2, popt[0], popt[1]))
     # plt.plot(x1, f1(x1), '.')
     # plt.show()
-    ϕ_g = ϕ_g_fun(x3, popt[0], popt[1])
+    
+    # Create look up table of phase values associated with greyscale ones
+    ϕ_g_lu = ϕ_g_fun(x2, popt[0], popt[1])
 
-    return ϕ_g
+    return ϕ_g_lu
 
 
 # Use the fitting results from 'fit_phase' to remap hologram Z_mod ############
