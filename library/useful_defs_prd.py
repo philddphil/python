@@ -12,6 +12,8 @@ import scipy.optimize as opt
 
 from scipy import ndimage
 from scipy.interpolate import interp1d
+from scipy.interpolate import RectBivariateSpline
+from scipy.ndimage.filters import gaussian_filter
 from PIL import Image
 
 np.set_printoptions(suppress=True)
@@ -20,7 +22,7 @@ np.set_printoptions(suppress=True)
 ###############################################################################
 # File & plotting defs
 ###############################################################################
-# Modokai pallette for plotting ###############################################
+# Modokai palette for plotting & set rcParams for nice plots ##################
 def palette():
     colours = {'mdk_purple': [145 / 255, 125 / 255, 240 / 255],
                'mdk_dgrey': [39 / 255, 40 / 255, 34 / 255],
@@ -65,7 +67,6 @@ def palette():
                'ggdblue': [0 / 255, 94 / 255, 169 / 255],
                'ggdpurple': [125 / 255, 105 / 255, 220 / 255],
                'ggdyellow': [209 / 255, 200 / 255, 70 / 255],
-
                }
 
     plt.style.use('ggplot')
@@ -106,7 +107,7 @@ def load_multicsv(directory):
     return data_all
 
 
-# Plot an image from a csv ####################################################
+# Plot an image from a .csv  saved by LabVIEW #################################
 def img_csv(file, delim=',', sk_head=1):
     im = np.genfromtxt(file, delimiter=delim, skip_header=sk_head)
     im_size = np.shape(im)
@@ -178,6 +179,7 @@ def PPT_save_2d_im(fig, ax, cb, name):
 
 # Smooth a numpy image array ##################################################
 def img_clean(im):
+    # Generate x and y axes for smoothing
     im_size = np.shape(im)
     y = np.arange(im_size[0])
     x = np.arange(im_size[1])
@@ -187,6 +189,7 @@ def img_clean(im):
     X, Y = np.meshgrid(x, y)
     X1, Y1 = np.meshgrid(x1, y1)
 
+    # Use a combination of RBS and Gauss filters on image
     RBS_f = RectBivariateSpline(y, x, im)
     RBS_im = RBS_f(y1, x1)
     G_RBS_im = gaussian_filter(RBS_im, 10)
@@ -207,7 +210,6 @@ def save_bmp(X, Path):
 
 # Cross correlating two images, returns the fftconvolution ####################
 def cross_image(im1, im2):
-    # get rid of the color channels by performing a grayscale transform
     # the type cast into 'float' is to avoid overflows
     im1_gray = im1.astype('float')
     im2_gray = im2.astype('float')
@@ -216,11 +218,11 @@ def cross_image(im1, im2):
     im1_gray -= np.mean(im1_gray)
     im2_gray -= np.mean(im2_gray)
 
-    # calculate the correlation image; note the flipping of onw of the images
+    # calculate the correlation image; note the flipping of one of the images
     return sp.signal.fftconvolve(im1_gray, im2_gray[::-1, ::-1], mode='same')
 
 
-#  For us with extents in imshow ##############################################
+#  For use with extents in imshow #############################################
 def extents(f):
     delta = f[1] - f[0]
     return [f[0] - delta / 2, f[-1] + delta / 2]
@@ -327,7 +329,7 @@ def holo_gen(*LabVIEW_data):
     # print(int(t1))
 
     # Calculate phase profiles for sub-holograms. Done seperately for grating
-    # - and additional sinusiod. 
+    # - and additional sinusiod.
     Z1 = phase_tilt(*Holo_params)
     Z2 = phase_sin(*Holo_params, sin_amp, sin_off)
 
@@ -336,9 +338,8 @@ def holo_gen(*LabVIEW_data):
 
     # print('generating subhologram = ', int(t2 - t1))
     # Remap phase with non linear ϕ map
-    
-    # create a new map of ϕ -> greylvl (g_ϕ1) which includes overshooting
     ϕ1 = np.linspace(0, ϕ_max, 256)
+    # create a new map of ϕ -> greylvl (g_ϕ1) which includes overshooting
     gs0 = g_ϕ(ϕ1)
     g_mid = int(g_ϕ((ϕ_up - ϕ_lw) / 2 + ϕ_lw))
     g_mid_val, g_mid_idx = find_nearest(gs0, g_mid)
