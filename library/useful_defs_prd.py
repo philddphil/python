@@ -595,7 +595,12 @@ def locate_beam(values, last_CT400, current_CT400, axis):
 
     # Works on 3 cases i0 == [0,1,2]
     # i0 determines first level of iteration - i.e. 1st or 2nd half of region
-    # being checked. 0 case is an exception as it's the first reading
+    # being checked.
+    # i0 == 0 case is the first reading, and so there is no stored information
+    # i0 == 1 checks the first half of the region being checked
+    # i0 == 2 checks the second half of the region being checked, and then
+    # decides which of the 2 region halves has yeilds a stronger signal
+
     if i0 == 0:
         values[Hol_c_val] = np.round((start - hd / 2) * values[LCOS_d_val])
         values[Hol_d_val] = np.floor((hd) * values[LCOS_d_val])
@@ -604,7 +609,8 @@ def locate_beam(values, last_CT400, current_CT400, axis):
         f0.close()
 
     elif i0 == 1:
-        # for i0 == 1 the 2nd measurement of the region is performed
+        # for i0 == 1 a power measurement for the 1st half of region is taken
+        # the hologram covering the 2nd half is then prepared
         # i1 determines the region being considered -
         # i1 = 1 is whole LCOS
         # i1 = 2 is 1/2 of LCOS
@@ -655,6 +661,8 @@ def locate_beam(values, last_CT400, current_CT400, axis):
         f1.close()
 
         # Termination statement. Search proceeds whilst i1 <= 8
+        # After 8 iterations the search has been narrowed to a region around
+        # 3 pixels across
     if i1 > 8:
         loop_out = 1
     else:
