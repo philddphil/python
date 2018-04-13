@@ -30,8 +30,11 @@ while True:
     call_time = time.ctime()
 
     if 'INIT' in str(cmnd):
+        # Initialisation. Runs the fit_phase function and returns the fitted
+        # ϕ_min and ϕ_max values. These come from the power measured when the
+        # phase is ramped in a binary grating
         print(call_time + ' INIT')
-        # Do initialisation
+
         hol_data = str(cmnd)
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
@@ -55,14 +58,15 @@ while True:
         variables = re.findall(r'\s(\D*)', hol_data)
         values = prd.variable_unpack(LabVIEW_data)
         hol_values = dict(zip(variables, values))
-        print(hol_values)
+        # print(hol_values)
         H = prd.holo_gen(*LabVIEW_data)
         conn.sendall(b'PLAY-DONE')
         t2 = 1000 * time.time()
         print('display total time =', int(t2 - t1))
 
     elif 'FINDp' in str(cmnd):
-        # Do the play action
+        # Finds the optimum rotation angle a hologram needs from the data
+        # sent over by labVIEW
         print('FIND ϕ')
         find_data = str(cmnd)
 
@@ -83,7 +87,8 @@ while True:
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'FINDL' in str(cmnd):
-        # Do the play action
+        # Finds the optimum period a hologram needs from the data sent over
+        # by labVIEW
         print('FIND Λ')
         find_data = str(cmnd)
         ΛP = find_data.split(',')
@@ -104,6 +109,9 @@ while True:
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'SAVE' in str(cmnd):
+        # Saves the current hologram in 2 locations - in the sub directory
+        # 'prior positions' with a date stamp, and also in the calibration
+        # folder with the fibre number in the file name
         print('SAVE')
         save_data = str(cmnd)
         port_data = [float(i1)
@@ -124,6 +132,7 @@ while True:
         conn.sendall(b'SAVE-DONE')
 
     elif 'READ' in str(cmnd):
+        # Read the hologram specified by the fibre number sent over by labVIEW
         read_data = str(cmnd)
         try:
             fibre = [float(i1)
@@ -161,7 +170,7 @@ while True:
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'BINA' in str(cmnd):
-        # Change the gray levels s.t. the grating is binary
+        # Change the gray levels s.t. the current hologram is binary
         print('BINA')
         hol_data = str(cmnd)
         LabVIEW_data = [float(i1)
@@ -174,8 +183,8 @@ while True:
 
         values[14] = 0
         values[15] = 0
-        values[12] = ϕ_range/2 + 0.1
-        values[13] = ϕ_range/2 + 0.1
+        values[12] = ϕ_range / 2 + 0.1
+        values[13] = ϕ_range / 2 + 0.1
         print(values)
         prd.holo_gen(*values)
 
@@ -189,6 +198,7 @@ while True:
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'PHASE' in str(cmnd):
+        # 
         print('PHASE')
         save_data = str(cmnd)
         port_data = [float(i1)
@@ -233,27 +243,19 @@ while True:
         Ps_last = np.genfromtxt(Ps_p, delimiter=',')
         CT400_last = Ps_last[0]
         PicoL_last = Ps_last[1]
-        # print('LAST-Power')
-        # print('+1 order = ' + str(np.round(CT400_last, 3)) + ' dB')
-        # print('-1 order = ' + str(np.round(PicoL_last, 3)) + ' dB')
-        # print('X-talk   = ' +
-        #       str(np.round(np.abs(last_CT400 - last_PicoL), 3)) + ' dB')
 
         Ps_LabVIEW = str(cmnd)
         Ps_current = [float(i1) for i1 in re.findall(
             r'[-+]?\d+[\.]?\d*', Ps_LabVIEW)]
         CT400_current = Ps_current[0]
         PicoL_current = Ps_current[1]
-        # print('CURRENT-Powers')
-        # print('+1 order = ' + str(np.round(CT400_current, 3)) + ' dB')
-        # print('-1 order = ' + str(np.round(PicoL_current, 3)) + ' dB')
-        # print('X-talk   = ' +
-        # str(np.round(np.abs(current_Ps[0] - current_Ps[1]), 3)) + ' dB')
+
         np.savetxt(Ps_p, np.array(Ps_current), delimiter=',')
         conn.sendall(bytes('BOTHP-DONE', 'utf-8'))
 
     elif 'LOCBEAM' in str(cmnd):
         print('LOCBEAM')
+        #
         data_in = str(cmnd)
         sts = data_in.split(',')
         ynotx = " ".join(re.findall("[a-zA-Z]+", sts[1]))
@@ -261,8 +263,6 @@ while True:
             axis = 0
         elif 'FALSE' in ynotx:
             axis = 1
-        # N.B. 'values' comes from last displayed hologram
-        # (see 'values' in DISP case)
         loop_out = prd.locate_beam(values, CT400_last, CT400_current, axis)
         data_out = (str(round(loop_out, 6))).zfill(10)
         current_hol = np.array(values)
@@ -274,23 +274,16 @@ while True:
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'ANNEAL' in str(cmnd):
-        # Take hologram centre coords and create (100 x 100) px random H
-        # N.B. 'values' comes from last displayed hologram
-        # (see 'values' in DISP case)
-        # 'last_Ps and current_Ps' come from previously executed BOTHP cases
+        # 
         print('ANNEAL')
-        # loop_out = prd.anneal_H1(values, Ps_last, Ps_current)
-        # loop_out = prd.anneal_H2(values, Ps_last, Ps_current, np.squeeze(H))
+
         loop_out, values = prd.anneal_H3(values, Ps_current, variables)
         data_in = str(cmnd)
         data_out = (str(round(loop_out, 6))).zfill(10)
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'SWEEP' in str(cmnd):
-        # Take hologram centre coords and create (100 x 100) px random H
-        # N.B. 'values' comes from last displayed hologram
-        # (see 'values' in DISP case)
-        # 'last_Ps and current_Ps' come from previously executed BOTHP cases
+        # 
         print('SWEEP')
         data_in = [float(i1)
                    for i1 in re.findall(r'[-+]?\d+[\.]?\d*', str(cmnd))]
@@ -298,7 +291,7 @@ while True:
         loop_out, data_out = prd.sweep_multi(
             data_in, values, Ps_current, variables)
         if loop_out == 1:
-            print ('sweep over')
+            print('sweep over')
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'QUIT' in str(cmnd):
