@@ -133,6 +133,8 @@ while True:
 
     elif 'READ' in str(cmnd):
         # Read the hologram specified by the fibre number sent over by labVIEW
+        # At the minute it's set to read fibres denoted by numbers < 10, 
+        # Fibre #99 is a special case and is the result of an anneal
         read_data = str(cmnd)
         try:
             fibre = [float(i1)
@@ -198,7 +200,8 @@ while True:
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'PHASE' in str(cmnd):
-        # 
+        # This is actually unused - I think. I'll be checking this when the
+        # equipment is back
         print('PHASE')
         save_data = str(cmnd)
         port_data = [float(i1)
@@ -227,6 +230,7 @@ while True:
         conn.sendall(b'PHASE-DONE')
 
     elif 'PICO' in str(cmnd):
+        # Reads the picoscope data sent by labVIEW
         print('PICO-DATA_IN')
         pico_data = str(cmnd)
         Ps = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', pico_data)]
@@ -237,6 +241,7 @@ while True:
         conn.sendall(b'PICO-DONE')
 
     elif 'BOTHP' in str(cmnd):
+        # Reads both the CT400 power and the picoscope power sent by labVIEW
         print('BOTHP')
         Ps_p = r'..\..\Data\Calibration files\Ps_last.csv'
 
@@ -255,7 +260,7 @@ while True:
 
     elif 'LOCBEAM' in str(cmnd):
         print('LOCBEAM')
-        #
+        # Locates the beam by running a binary search algorithm
         data_in = str(cmnd)
         sts = data_in.split(',')
         ynotx = " ".join(re.findall("[a-zA-Z]+", sts[1]))
@@ -274,16 +279,16 @@ while True:
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'ANNEAL' in str(cmnd):
-        # 
+        # Runs the annealing function (see anneal_H for details)
         print('ANNEAL')
 
-        loop_out, values = prd.anneal_H3(values, Ps_current, variables)
+        loop_out, values = prd.anneal_H(values, Ps_current, variables)
         data_in = str(cmnd)
         data_out = (str(round(loop_out, 6))).zfill(10)
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'SWEEP' in str(cmnd):
-        # 
+        # Sweeps a set of parameters for optimisation of the merit function
         print('SWEEP')
         data_in = [float(i1)
                    for i1 in re.findall(r'[-+]?\d+[\.]?\d*', str(cmnd))]
@@ -295,7 +300,7 @@ while True:
         conn.sendall(bytes(str(data_out), 'utf-8'))
 
     elif 'QUIT' in str(cmnd):
-        # Do the quiting action
+        # Closes the server program
         print(call_time + ' QUIT')
         conn.sendall(b'QUIT-DONE')
         break

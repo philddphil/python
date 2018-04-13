@@ -16,6 +16,7 @@ from scipy.interpolate import RectBivariateSpline
 from scipy.ndimage.filters import gaussian_filter
 from PIL import Image
 
+# Sets the print output to be a bit more readability #########################
 np.set_printoptions(suppress=True)
 
 
@@ -107,7 +108,7 @@ def load_multicsv(directory):
     return data_all
 
 
-# Plot an image from a .csv  saved by LabVIEW #################################
+# Plot an image from a .csv  (saved by LabVIEW) ###############################
 def img_csv(file, delim=',', sk_head=1):
     im = np.genfromtxt(file, delimiter=delim, skip_header=sk_head)
     im_size = np.shape(im)
@@ -118,7 +119,7 @@ def img_csv(file, delim=',', sk_head=1):
     return (im, coords)
 
 
-# Plot an image from a labVIEW ################################################
+# Plot an image from a .txt (saved by labVIEW) ################################
 def img_labVIEW(file):
     im = np.loadtxt(file)
     im_size = np.shape(im)
@@ -129,7 +130,7 @@ def img_labVIEW(file):
     return (im, coords)
 
 
-# Save 3d plot as a colourscheme suitable for ppt, as a png ###################
+# Save 3d plot with a colourscheme suitable for ppt, as a png #################
 def PPT_save_3d(fig, ax, name):
     plt.rcParams['text.color'] = 'xkcd:charcoal grey'
     fig.patch.set_facecolor('xkcd:white')
@@ -148,7 +149,7 @@ def PPT_save_3d(fig, ax, name):
     fig.savefig(name)
 
 
-# Save 2d plot as a colourscheme suitable for ppt, as a png ###################
+# Save 2d plot with a colourscheme suitable for ppt, as a png #################
 def PPT_save_2d(fig, ax, name):
     plt.rcParams['text.color'] = 'xkcd:charcoal grey'
     plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
@@ -161,7 +162,7 @@ def PPT_save_2d(fig, ax, name):
     ax.figure.savefig(name)
 
 
-# Save 2d image as a colourscheme suitable for ppt, as a png ##################
+# Save 2d image with a colourscheme suitable for ppt, as a png ################
 def PPT_save_2d_im(fig, ax, cb, name):
     plt.rcParams['text.color'] = 'xkcd:charcoal grey'
     plt.rcParams['savefig.facecolor'] = ((1.0, 1.0, 1.0, 0.0))
@@ -233,7 +234,7 @@ def extents(f):
 ###############################################################################
 # Overshoot mapping ###########################################################
 def overshoot_phase(H1, g_OSlw, g_OSup, g_min, g_max):
-    # Legacy code - not used anymore 
+    # Legacy code - not used anymore
     H2 = copy.copy(H1)
     Super_thres_indices = H1 > g_OSup
     Sub_thres_indices = H1 <= g_OSlw
@@ -358,7 +359,7 @@ def holo_gen(*LabVIEW_data):
 
     g_ϕ1 = interp1d(ϕ1, gs3)
 
-    # Generate sub hologram H1 by using the new ϕ -> g map on the 
+    # Generate sub hologram H1 by using the new ϕ -> g map on the
     # phase profile Z_mod
     H1 = remap_phase(Z_mod, g_ϕ1)
 
@@ -455,7 +456,7 @@ def add_holo_LCOS(H_cy, H_cx, Z_mod, LCOSy, LCOSx):
 
     # Alternatively make LCOS background pattern 0s
     # Holo_f = np.zeros((LCOSy,LCOSx))
-    
+
     # Take care of situations where subhologram extends beyond LCOS
     dy1 = 0
     dy2 = 0
@@ -534,7 +535,7 @@ def fit_phase():
     # Initial guess for coefficients in function P_g_fun
     initial_guess = (16, 1 / 650)
 
-    # Use try/except statement. ATM failure will probably crash LabVIEW 
+    # Use try/except statement. ATM failure will probably crash LabVIEW
     try:
         popt, _ = opt.curve_fit(P_g_fun, x1, f1(
             x1), p0=initial_guess, bounds=([0, -np.inf], [np.inf, np.inf]))
@@ -544,7 +545,7 @@ def fit_phase():
     # plt.plot(x3, P_g_fun(x2, popt[0], popt[1]))
     # plt.plot(x1, f1(x1), '.')
     # plt.show()
-    
+
     # Create look up table of phase values associated with greyscale ones
     ϕ_g_lu = ϕ_g_fun(x2, popt[0], popt[1])
 
@@ -662,144 +663,17 @@ def locate_beam(values, last_CT400, current_CT400, axis):
 
 
 # Use simulated annealing to optimise hologram ###############################
-def anneal_H1(values, Ps_last, Ps_current):
-    i0_p = r'..\..\Data\Python loops\Anneal i0.txt'
-    MF_p = r'..\..\Data\Python loops\Anneal MF.txt'
-    XT_p = r'..\..\Data\Python loops\Anneal XT.txt'
-    IL_p = r'..\..\Data\Python loops\Anneal IL.txt'
-    H_an_p = r'..\..\Data\Python loops\Anneal Hol.txt'
-    H_an_pL = r'..\..\Data\Python loops\Anneal Hol Last.txt'
+def anneal_H(values, Ps_current, variables):
+    # Please note that this isn't technically an anneal (despite it's name!)
+    # It's essentially a loop with a manual stop condition on the front panel
+    # of the LabVIEW control.
+    # Also it's a local search (see the variable ranges) and not a global one
+    # The scaffold of the code is complete and functional however, it just
+    # didn't seem to be a particularly fruitful avenue to proceed down, so the
+    # details to add the thermal annealing criterea and the global searching
+    # were never added (but could be relatively easily)
 
-    MF_last = merit(Ps_last)
-    MF_current = merit(Ps_current)
-    print('Ps last = ', Ps_last)
-    print('Ps current = ', Ps_current)
-    i0 = np.genfromtxt(i0_p, dtype='int')
-    print(i0)
-    if i0 == 0:
-        H_an = np.random.randint(255, size=(100, 100))
-        np.savetxt(H_an_pL, H_an)
-        print('Save 1st Holo')
-    elif i0 == 1:
-        H_an = np.random.randint(255, size=(100, 100))
-        np.savetxt(H_an_p, H_an)
-        print('Save 2nd Holo')
-        data_str = str(MF_current)
-        f1 = open(MF_p, 'a')
-        f1.write(data_str)
-        f1.close()
-    else:
-        random_x = np.random.choice(int(values[2]))
-        random_y = np.random.choice(int(values[3]))
-        # Compare last and current MFs
-        if MF_current > MF_last:
-            H_an = np.genfromtxt(H_an_p, dtype='int')
-            np.savetxt(H_an_pL, H_an)
-            H_an[random_x, random_y] = np.random.randint(0, 255)
-            np.savetxt(H_an_p, H_an)
-        else:
-            H_an = np.genfromtxt(H_an_pL, dtype='int')
-            H_an[random_x, random_y] = np.random.randint(0, 255)
-            np.savetxt(H_an_p, H_an)
-            MF_str = ',' + str(MF_current)
-            f1 = open(MF_p, 'a')
-            f1.write(MF_str)
-            f1.close()
-            XT_str = ',' + str(Ps_current[0] - Ps_current[1])
-            f2 = open(XT_p, 'a')
-            f2.write(XT_str)
-            f2.close()
-            IL_str = ',' + str(Ps_current[0])
-            f3 = open(IL_p, 'a')
-            f3.write(IL_str)
-            f3.close()
-
-    Holo_f = add_holo_LCOS(values[5], values[4], H_an,
-                           values[1], values[0])
-    save_bmp(Holo_f, r"..\..\Data\bmps\hologram")
-    i0 = i0 + 1
-    f0 = open(i0_p, 'w')
-    f0.write(str(i0))
-    f0.close()
-
-    # Termination statement. Search proceeds whilst i1 <= 8
-    if MF_current > -6:
-        loop_out = 1
-    else:
-        loop_out = 0
-    return(loop_out)
-
-
-# Use simulated annealing to optimise hologram ###############################
-def anneal_H2(values, Ps_last, Ps_current, H_in):
-    i0_p = r'..\..\Data\Python loops\Anneal i0.txt'
-    MF_p = r'..\..\Data\Python loops\Anneal MF.txt'
-    XT_p = r'..\..\Data\Python loops\Anneal XT.txt'
-    IL_p = r'..\..\Data\Python loops\Anneal IL.txt'
-    H_an_p = r'..\..\Data\Python loops\Anneal Hol.txt'
-    H_an_pL = r'..\..\Data\Python loops\Anneal Hol Last.txt'
-    MF_last = merit(Ps_last)
-    MF_current = merit(Ps_current)
-    i0 = np.genfromtxt(i0_p, dtype='int')
-    print(i0)
-    if i0 == 0:
-        H_an = H_in
-        np.savetxt(H_an_pL, H_an)
-        print('Save 1st Holo')
-    elif i0 == 1:
-        H_an = H_in
-        np.savetxt(H_an_p, H_an)
-        print('Save 2nd Holo')
-        data_str = str(MF_current)
-        f1 = open(MF_p, 'a')
-        f1.write(data_str)
-        f1.close()
-    else:
-        random_x = np.random.choice(int(values[2]))
-        random_y = np.random.choice(int(values[3]))
-        # Compare last and current MFs
-        if MF_current > MF_last:
-            H_an = np.genfromtxt(H_an_p, dtype='int')
-            np.savetxt(H_an_pL, H_an)
-            H_an[random_x, random_y] = np.random.randint(0, 255)
-            np.savetxt(H_an_p, H_an)
-            print('∆MF ++++++++ Change')
-        else:
-            H_an = np.genfromtxt(H_an_pL, dtype='int')
-            H_an[random_x, random_y] = np.random.randint(0, 255)
-            np.savetxt(H_an_p, H_an)
-            MF_str = ',' + str(MF_current)
-            f1 = open(MF_p, 'a')
-            f1.write(MF_str)
-            f1.close()
-            XT_str = ',' + str(Ps_current[0] - Ps_current[1])
-            f2 = open(XT_p, 'a')
-            f2.write(XT_str)
-            f2.close()
-            IL_str = ',' + str(Ps_current[0])
-            f3 = open(IL_p, 'a')
-            f3.write(IL_str)
-            f3.close()
-            print('∆MF ------- Dont Change')
-
-    Holo_f = add_holo_LCOS(values[5], values[4], H_an,
-                           values[1], values[0])
-    save_bmp(Holo_f, r"..\..\Data\bmps\hologram")
-    i0 = i0 + 1
-    f0 = open(i0_p, 'w')
-    f0.write(str(i0))
-    f0.close()
-
-    # Termination statement. Search proceeds whilst i1 <= 8
-    if MF_current > -6:
-        loop_out = 1
-    else:
-        loop_out = 0
-    return(loop_out)
-
-
-# Use simulated annealing to optimise hologram ###############################
-def anneal_H3(values, Ps_current, variables):
+    # Set paths for annealing loops
     i0_p = r'..\..\Data\Python loops\Anneal i0.txt'
     MF_p = r'..\..\Data\Python loops\Anneal MF.txt'
     MFk_p = r'..\..\Data\Python loops\Anneal MF keep.txt'
@@ -811,8 +685,11 @@ def anneal_H3(values, Ps_current, variables):
     MF_current = merit(Ps_current)
     i0 = np.genfromtxt(i0_p, dtype='int')
 
+    # Prints the iteration number of the anneal
     print(i0)
 
+    # Define several ranges associated with hologram parameters which may be
+    # annealed
     ϕ_lwlim_rng = (values[6], min(values[7], values[8] + 0.1))
     ϕ_uplim_rng = (values[9] - 0.1, min(values[7], values[9] + 0.1))
     g_OSlw_rng = (values[12], values[12] + 1)
@@ -825,11 +702,16 @@ def anneal_H3(values, Ps_current, variables):
     sin_amp_rng = (0, 0.2)
     sin_off_rng = (0, values[14])
 
+    # Define a list of parameters which are going to be varied
+    # See 'Unpack variables' def for which number/parameter
     params_to_vary = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+
+    # Construct a list of the ranges
     rngs_to_vary = [ϕ_lwlim_rng, ϕ_uplim_rng, g_OSlw_rng, g_OSup_rng,
                     g_min_rng, g_max_rng, Λ_rng, φ_rng, offset_rng,
                     sin_amp_rng, sin_off_rng]
 
+    # First iteration is a special case
     if i0 == 0:
         np.savetxt(H_an_pk, values, delimiter=",",
                    header='see code structure for variable names')
@@ -903,6 +785,7 @@ def anneal_H3(values, Ps_current, variables):
 
 # Sweep parameters and select optimal value ##################################
 def sweep(values, Ps_current, variables, param=0):
+    # Set up the paths to be accessed by this algorithm
     i1_p = r'..\..\Data\Python loops\Swept i1.txt'
     MF_p = r'..\..\Data\Python loops\Swept MF.txt'
     XT_p = r'..\..\Data\Python loops\Swept XT.txt'
@@ -911,15 +794,26 @@ def sweep(values, Ps_current, variables, param=0):
     H_swp_p = r'..\..\Data\Python loops\Sweep H.txt'
     param_swp_p = r'..\..\Data\Python loops\Swept param.txt'
 
+    # Whenever a parameter is swept, this is the number of data points taken
     pts = 10
 
+    # Calculate the merit function value from the current Ps
     MF_current = merit(Ps_current)
+
+    # Retrieve the iteration number from the text file
     i1 = np.genfromtxt(i1_p, dtype='int')
+    # Retrieve the range of the parameter to sweep
     rng = np.genfromtxt(param_swp_p)
+    # Makes sure the input, param is an integer and so can refer to items in
+    # a list
     param_2_swp = int(param)
 
+    # Tracks a second iterant, i1. i0 in the sweep_multi def tracks the
+    # parameter to be optmised, i1 is the count data points in a sweep of
+    # the i0th parameter [i.e. i1 < pts]
     print('i1 - ', i1)
 
+    # i1 = 0 is special case where the ranges of the parameters are defined
     if i1 == 0:
         Λ_rng = (values[0] - 0.5, values[0] + 0.5)
         φ_rng = (values[1] - 0.3, values[1] + 0.3)
@@ -983,6 +877,8 @@ def sweep(values, Ps_current, variables, param=0):
                    header='see code structure for variable names')
         holo_gen(*values)
 
+    # When i1 == pts, the i0th parameter has been completely swept and needs
+    # to be fitted (see sweep multi def) - files are saved without a comma
     elif i1 == pts:
         MF_str = str(MF_current)
         f1 = open(MF_p, 'a')
@@ -1000,6 +896,8 @@ def sweep(values, Ps_current, variables, param=0):
         f4 = open(Rng_p, 'a')
         f4.write(Rng_str)
         f4.close()
+
+    # When i1 > 0 & < pts the files are written with a comma
     else:
         new_value = rng[i1]
         values[param_2_swp] = new_value
@@ -1024,7 +922,8 @@ def sweep(values, Ps_current, variables, param=0):
                    header='see code structure for variable names')
         holo_gen(*values)
 
-    # Termination statement. Search proceeds whilst i1 <= 8
+    # Termination statement, the loop_out variable is ultimately passed out to
+    # LabVIEW and decides whether or not to terminate its while loop
     if i1 == pts:
         loop_out = 1
         print('End sweep')
@@ -1032,6 +931,7 @@ def sweep(values, Ps_current, variables, param=0):
         loop_out = 0
         print('Carry on')
 
+    # Increment the iterator
     i1 = i1 + 1
     f0 = open(i1_p, 'w')
     f0.write(str(i1))
@@ -1057,11 +957,14 @@ def sweep_fit():
     MF = np.genfromtxt(p1 + f3, delimiter=',')
     v = np.genfromtxt(p1 + f5, delimiter=',')
 
+    # The initial guess structure is based entirely on metrics from the data
+    # set, and has proved reliable so far.
     initial_guess = (np.abs(max(MF) - min(MF)),
                      np.mean(v),
                      np.max(v) - np.min(v),
                      min(MF) - np.abs(max(MF) - min(MF)))
     try:
+        # This fits a 1D Gaussian to the swept parameter v
         popt, _ = opt.curve_fit(Gaussian_1D, v, MF,
                                 p0=initial_guess,
                                 bounds=([0, min(v), -np.inf, -np.inf],
@@ -1071,6 +974,8 @@ def sweep_fit():
         # plt.plot(v, Gaussian_1D(v, *popt))
     except RuntimeError:
         print("Error - curve_fit failed")
+        # In the event that the fit fails, the value of the variable v is taken
+        # at the point where MF is maximised
         popt = [0, v[np.where(MF == max(MF))], 0]
         # plt.plot(v, MF, '.')
 
@@ -1084,6 +989,7 @@ def sweep_fit():
 
 # Call sweep multiple time for different hologram params in 'values' ##########
 def sweep_multi(data_in, values, Ps_current, variables):
+    # Set up the paths to be accessed by this algorithm
     i0_p = r'..\..\Data\Python loops\Swept i0.txt'
     i1_p = r'..\..\Data\Python loops\Swept i1.txt'
     MF_p = r'..\..\Data\Python loops\Swept MF.txt'
@@ -1092,30 +998,48 @@ def sweep_multi(data_in, values, Ps_current, variables):
     Rng_p = r'..\..\Data\Python loops\Swept Rng.txt'
     H_swp_p = r'..\..\Data\Python loops\Sweep H.txt'
     param_swp_p = r'..\..\Data\Python loops\Swept param.txt'
+    params_p = r'..\..\Data\Python loops\Param list.txt'
 
+    # Read in the iteration number i0 from the saved text file
+    # This iterator tracks which parameters toggled on in the labVIEW vi is
+    # being optimised
     f1 = open(i0_p, 'r')
     i0 = int(f1.read())
     f1.close()
 
-    params_p = r'..\..\Data\Python loops\Param list.txt'
-
+    # Saves the parameter list to be optimised as the file Param list.txt
     np.savetxt(params_p, data_in, delimiter=',')
+    # The current parameter to be swept
     param = data_in[i0]
+    # The total length of parameters to be swept
     p_sweep = len(data_in)
+
+    # Sweep the parameter under consideration
     loop_out, values = sweep(values, Ps_current, variables, param)
+
+    # Loop-out == 1, it can mean we need to move onto the next parameter or
+    # the entire loop is finished.
+    # This if statement accommodates this.
     if loop_out == 1 and i0 < p_sweep:
+        # Performs a fit to the swept parameter
         fit_outcome, opt_val = sweep_fit()
         if fit_outcome == 1:
             print('Success! Optimum = ', opt_val)
             values[int(param)] = opt_val
+            # The only parameters which can't be floats are the central pixel
+            # values in x and y. These are params 6 & 7, and are rounded here
             if int(param) == 6 or int(param) == 7:
                 values[int(param)] = int(opt_val)
         else:
             print('Failed fit :( Value set to mean = ', opt_val)
             values[int(param)] = opt_val
+            # The only parameters which can't be floats are the central pixel
+            # values in x and y. These are params 6 & 7, and are rounded here
             if int(param) == 6 or int(param) == 7:
                 values[int(param)] = int(opt_val)
-
+        # Since the parameter has been completely swept, the files are all
+        # overwritten with an empty space, ready for the next parameter to
+        # be swept
         f1 = open(i1_p, 'w')
         f1.write(str(0))
         f1.close()
@@ -1149,6 +1073,7 @@ def sweep_multi(data_in, values, Ps_current, variables):
     data_out = (str(round(loop_out, 6))).zfill(10)
     current_hol = np.array(values)
 
+    # fills data_out with the hologram parameters
     for i1 in np.ndenumerate(current_hol[0:]):
         elem = (str(np.round(i1[1], 6))).zfill(10)
         data_out = data_out + ',' + elem
@@ -1247,7 +1172,7 @@ def holo_gen_param(p1):
     f2 = p1 + r'\Phase greys.csv'
 
     Λ = 10
-    φ = 90* (np.pi / 180)
+    φ = 90 * (np.pi / 180)
     H_δx = 100
     H_δy = 100
     ϕ_lw = π * 0.5
@@ -1481,7 +1406,7 @@ def holo_replay_file(f0, p1):
     plt.figure('fig2')
     plt.plot(LCOS_y_ax_padded,
              phase_SLM_20[:, 0] / π, '.:')
-    plt.plot(LCOS_y_ax, Z0[:, 0] / π, 'o') 
+    plt.plot(LCOS_y_ax, Z0[:, 0] / π, 'o')
     plt.title('SLM phase from file', size=8, color=cs['mdk_dgrey'])
     plt.tight_layout()
     # plt.figure('fig2')
@@ -1521,7 +1446,7 @@ def holo_replay_file(f0, p1):
 # Calculate the replay field of a phase pattern, Z
 def holo_replay_Z(Z):
     π = np.pi
-    px_edge = 80 # blurring of rect function - bigger = blurier
+    px_edge = 80  # blurring of rect function - bigger = blurier
     px_pad = 8
     fft_pad = 4
     px = 6.4e-6
