@@ -199,36 +199,6 @@ while True:
                     ',' + osw_lw_str + ',' + osw_up_str)
         conn.sendall(bytes(data_out, 'utf-8'))
 
-    elif 'PHASE' in str(cmnd):
-        # This is actually unused - I think. I'll be checking this when the
-        # equipment is back
-        print('PHASE')
-        save_data = str(cmnd)
-        port_data = [float(i1)
-                     for i1 in re.findall(r'[-+]?\d+[\.]?\d*', save_data)]
-        files = glob.glob(
-            r'C:\Users\User\Documents\Phils LabVIEW\Data\Pico Log\*.csv')
-        total_data = []
-        for i1 in files:
-            temp_data = np.genfromtxt(i1, delimiter=',')
-            print(np.shape(temp_data))
-            total_data = np.concatenate((total_data, temp_data))
-            os.remove(i1)
-
-        plt.plot(total_data, color='xkcd:blue')
-        s1 = r'..\..\Data\Calibration files\prior phaseramps'
-        f1 = time.strftime(
-            'wavelength-' + str(port_data[0]) + 'nm  time-%Y%m%d-%H%M%S.csv')
-        f2 = time.strftime(
-            'wavelength-' + str(port_data[0]) + 'nm  time-%Y%m%d-%H%M%S.png')
-        p1 = os.path.join(s1, f1)
-        p2 = os.path.join(s1, f2)
-        np.savetxt(p1, total_data, delimiter=",")
-        plt.savefig(p2)
-        plt.cla()
-        print('PHASE-DONE')
-        conn.sendall(b'PHASE-DONE')
-
     elif 'PICO' in str(cmnd):
         # Reads the picoscope data sent by labVIEW
         print('PICO-DATA_IN')

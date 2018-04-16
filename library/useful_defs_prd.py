@@ -381,8 +381,8 @@ def holo_gen(*LabVIEW_data):
                     ϕ_up, offset, sin_amp, sin_off)
     Za_mod = phase_mod(Z1a + Z2a, ϕ_lw, ϕ_up)
     H1a = remap_phase(Za_mod, g_ϕ1)
-    h1_0 = remap_phase(Za_mod, g_ϕ1)[:, 5]
-    h3_0 = remap_phase(Za_mod, g_ϕ)[:, 5]
+    h1_0 = remap_phase(Za_mod, g_ϕ1)[:, 0]
+    h3_0 = remap_phase(Za_mod, g_ϕ)[:, 0]
     Z1f = ϕ_g(H1)
     Z1fa = ϕ_g(H1a)
     np.savetxt(r'..\..\Data\Calibration files\greyprofile1.csv',
