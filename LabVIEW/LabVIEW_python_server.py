@@ -154,6 +154,8 @@ while True:
             data_out = data_out[1:]
             print('loaded last ' + 'fibre ' + str(fibre))
 
+        # If there is an index error in when loading up the fibre csv, if 
+        # switches to some saved 'default positions'
         except IndexError:
             fibre = [float(i1)
                      for i1 in re.findall(r'[-+]?\d+[\.]?\d*', read_data)]
