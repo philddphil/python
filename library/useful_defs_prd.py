@@ -1680,12 +1680,21 @@ def find_fit_peak(x, y, A, x_c):
         popt, pcov = opt.curve_fit(
             Gaussian_1D, x, y, p0=initial_guess)
         fit0 = Gaussian_1D(x_1, *popt)
-        p1 = r'C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files\sweepfit.csv'
-        p2 = r'C:\Users\User\Documents\Phils LabVIEW\Data\Calibration files\sweepdata.csv'
+
+        # After performing result, and the fitted data are saved to a temp.
+        # location for labVIEW to plot
+        # paths for data + fit
+        p1 = (r'C:\Users\User\Documents\Phils LabVIEW\Data'
+              r'\Calibration files\sweepfit.csv')
+        p2 = (r'C:\Users\User\Documents\Phils LabVIEW\Data'
+              r'\Calibration files\sweepdata.csv')
+        # save data and fit to paths
         np.savetxt(p1, np.column_stack((x_1, fit0)), delimiter=',')
         np.savetxt(p2, np.column_stack((x, y)), delimiter=',')
+        # get location of fitted peak
         Peak_ind_f = np.unravel_index(fit0.argmax(), fit0.shape)
         x_peak = x_1[Peak_ind_f[0]]
+
         # plt.plot(x_peak, np.max(fit0), 'x', c='xkcd:blue')
         # plt.plot(x_1, fit0, '-', c='xkcd:light blue')
         # plt.draw()
