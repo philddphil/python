@@ -524,8 +524,8 @@ def fit_phase():
     y_dB = np.genfromtxt(f1, delimiter=',')
     y_lin = np.power(10, y_dB / 10) / np.max(np.power(10, y_dB / 10))
 
-    # Import grey lvls used in experiment. It is important that they start at 
-    # 0  and end at 255 - the number of data points inbetween doesn't really 
+    # Import grey lvls used in experiment. It is important that they start at
+    # 0  and end at 255 - the number of data points inbetween doesn't really
     # matter. This is achieved by the labVIEW 'Phase profile' state machine
     x0 = np.genfromtxt(f2, delimiter=',')
 
@@ -599,7 +599,7 @@ def locate_beam(values, last_CT400, current_CT400, axis):
     start = 0.5
     shift = 0
 
-    # Works on 3 cases i0 == [0,1,2]
+    # Works on 3 cases of first iterator, i0 == [0,1,2]
     # i0 determines first level of iteration - i.e. 1st or 2nd half of region
     # being checked.
     # i0 == 0 case is the first reading, and so there is no stored information

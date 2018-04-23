@@ -7,11 +7,8 @@ import re
 import numpy as np
 import time
 import os
-import glob
-import matplotlib.pyplot as plt
 import useful_defs_prd as prd
 
-from struct import *
 from scipy.interpolate import interp1d
 from datetime import datetime
 
@@ -26,7 +23,7 @@ print('Server Listening')
 
 while True:
     conn, addr = server.accept()
-    # Assigns the received data from LabVIEW to
+    # Assigns the received data (bytes) from LabVIEW to 'cmnd'
     cmnd = conn.recv(16384)
     call_time = time.ctime()
 
@@ -36,11 +33,20 @@ while True:
         # phase is ramped in a binary grating
         print(call_time + ' INIT')
 
-        # Takes the data 
+        # Takes the data from labVIEW and changes it to data type 'string'
+        # for holograms this data takes the form of:
+        # variablename1 ###value### [Space] variablename2 ###value### [Space]'
         hol_data = str(cmnd)
+
+        # Find numeric values (as above) in hol_data using regular expression
+        # toolbox (re)
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
+
+        # Extract the variable names in hol_data
         variables = re.findall(r'\s(\D*)', hol_data)
+
+        # Grab current phase profile information for ϕ min/max values
         ϕ_g = prd.fit_phase()
         ϕ_max = max(ϕ_g) / np.pi
         ϕ_min = min(ϕ_g) / np.pi
@@ -48,19 +54,36 @@ while True:
         ϕ_min = (str(round(ϕ_min, 6))).zfill(10)
         ϕ_max = (str(round(ϕ_max, 6))).zfill(10)
         data_out = ϕ_min + ',' + ϕ_max
+
+        # Send ϕ min/max values back to labVIEW to show values in holo control
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'GEN' in str(cmnd):
         # Generate a hologram and save it as a bmp
         print('GEN')
         t1 = 1000 * time.time()
+
+        # Takes the data from labVIEW and changes it to data type 'string'
+        # for holograms this data takes the form of:
+        # variablename1 ###value### [Space] variablename2 ###value### [Space]'
         hol_data = str(cmnd)
+
+        # Find numeric values (as above) in hol_data using regular expression
+        # toolbox (re)
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
+
+        # Extract the variable names in hol_data
         variables = re.findall(r'\s(\D*)', hol_data)
+
+        # Feed values into variable_unpack to assign values to variables
         values = prd.variable_unpack(LabVIEW_data)
+
+        # Creates dictionary of paired variable/value entries
         hol_values = dict(zip(variables, values))
-        # print(hol_values)
+
+        # Generates actual hologram, H. It is also saved as a bmp to be
+        # displayed by labVIEW
         H = prd.holo_gen(*LabVIEW_data)
         conn.sendall(b'GEN-DONE')
         t2 = 1000 * time.time()
@@ -68,14 +91,15 @@ while True:
 
     elif 'FINDp' in str(cmnd):
         # Finds the optimum rotation angle a hologram needs from the data
-        # sent over by labVIEW
+        # sent over by labVIEW. Rather than saving as a seperate .txt or
+        # . csv file, I send the data directly over the TCP/IP connection
         print('FIND ϕ')
         find_data = str(cmnd)
 
+        # All of this just reorganises the data in cmnd into np.arrays
         ϕP = find_data.split(',')
         ϕs = ϕP[1].split('\t')
         Ps = ϕP[2].split('\t')
-        print(Ps)
         ϕs = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', ϕP[1])]
         Ps = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', ϕP[2])]
         Ps = np.array(Ps)
@@ -135,7 +159,7 @@ while True:
 
     elif 'READ' in str(cmnd):
         # Read the hologram specified by the fibre number sent over by labVIEW
-        # At the minute it's set to read fibres denoted by numbers < 10, 
+        # At the minute it's set to read fibres denoted by numbers < 10,
         # Fibre #99 is a special case and is the result of an anneal
         read_data = str(cmnd)
         try:
@@ -156,7 +180,7 @@ while True:
             data_out = data_out[1:]
             print('loaded last ' + 'fibre ' + str(fibre))
 
-        # If there is an index error in when loading up the fibre csv, if 
+        # If there is an index error in when loading up the fibre csv, if
         # switches to some saved 'default positions'
         except IndexError:
             fibre = [float(i1)
