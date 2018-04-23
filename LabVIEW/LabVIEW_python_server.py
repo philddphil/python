@@ -26,6 +26,7 @@ print('Server Listening')
 
 while True:
     conn, addr = server.accept()
+    # Assigns the received data from LabVIEW to
     cmnd = conn.recv(16384)
     call_time = time.ctime()
 
@@ -35,6 +36,7 @@ while True:
         # phase is ramped in a binary grating
         print(call_time + ' INIT')
 
+        # Takes the data 
         hol_data = str(cmnd)
         LabVIEW_data = [float(i1)
                         for i1 in re.findall(r'[-+]?\d+[\.]?\d*', hol_data)]
@@ -60,7 +62,7 @@ while True:
         hol_values = dict(zip(variables, values))
         # print(hol_values)
         H = prd.holo_gen(*LabVIEW_data)
-        conn.sendall(b'PLAY-DONE')
+        conn.sendall(b'GEN-DONE')
         t2 = 1000 * time.time()
         print('display total time =', int(t2 - t1))
 
