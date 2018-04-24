@@ -106,10 +106,16 @@ while True:
         ϕs = np.array(ϕs)
         Ps = np.power(10, Ps / 10)
 
+        # Runs find_fit_peak function
         ϕ = prd.find_fit_peak((np.pi / 180) * ϕs, Ps, max(Ps), 0.1)
+
+        # Rounds grating rotation angle (ϕ) to 6 d.p. and then pads the value
+        # to 10 bytes in length
         ϕ = (str(round(ϕ * 180 / np.pi, 6))).zfill(10)
         data_out = ϕ
         print('ϕ = ', ϕ)
+
+        # Sends data_out back to LabVIEW encoded with utf-8
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'FINDL' in str(cmnd):
@@ -117,21 +123,27 @@ while True:
         # by labVIEW
         print('FIND Λ')
         find_data = str(cmnd)
-        ΛP = find_data.split(',')
 
+        # All of this just reorganises the data in cmnd into np.arrays
+        ΛP = find_data.split(',')
         Λs = ΛP[1].split('\t')
         Ps = ΛP[2].split('\t')
-        print(Ps)
         Λs = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', ΛP[1])]
         Ps = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', ΛP[2])]
         Ps = np.array(Ps)
         Λs = np.array(Λs)
         Ps = np.power(10, Ps / 10)
 
+        # Runs find_fit_peak function
         Λ = prd.find_fit_peak(Λs, Ps, max(Ps), 1)
+
+        # Rounds grating period (Λ) to 6 d.p. and then pads the value to 10
+        # bytes in length
         Λ = (str(round(Λ, 6))).zfill(10)
         data_out = Λ
         print('Λ = ', Λ)
+
+        # Sends data_out back to LabVIEW encoded with utf-8
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'SAVE' in str(cmnd):
@@ -155,6 +167,8 @@ while True:
         np.savetxt(p2, port_data, delimiter=",",
                    header='see code structure for variable names')
         print(port_data)
+
+        # Sends data_out back to LabVIEW encoded with utf-8
         conn.sendall(b'SAVE-DONE')
 
     elif 'READ' in str(cmnd):
@@ -197,6 +211,7 @@ while True:
             data_out = data_out[1:]
             print('loaded default ' + 'fibre ' + str(fibre))
 
+        # Sends data_out back to LabVIEW encoded with utf-8
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'BINA' in str(cmnd):
@@ -228,7 +243,8 @@ while True:
         conn.sendall(bytes(data_out, 'utf-8'))
 
     elif 'PICO' in str(cmnd):
-        # Reads the picoscope data sent by labVIEW
+        # Reads the picoscope data sent by labVIEW and saves it with a
+        # timestamped filename in Pico Log directory
         print('PICO-DATA_IN')
         pico_data = str(cmnd)
         Ps = [float(i1) for i1 in re.findall(r'[-+]?\d+[\.]?\d*', pico_data)]
@@ -240,6 +256,7 @@ while True:
 
     elif 'BOTHP' in str(cmnd):
         # Reads both the CT400 power and the picoscope power sent by labVIEW
+        # Also saves both values (averaged PicoLog one) in Ps_last.csv
         print('BOTHP')
         Ps_p = r'..\..\Data\Calibration files\Ps_last.csv'
 
@@ -260,16 +277,25 @@ while True:
         print('LOCBEAM')
         # Locates the beam by running a binary search algorithm
         data_in = str(cmnd)
+        # Splits the LOCBEAM string from the boolean (TRUE/FALSE) string,
+        # specifying which axis to run the binary search on
         sts = data_in.split(',')
         ynotx = " ".join(re.findall("[a-zA-Z]+", sts[1]))
         if 'TRUE' in ynotx:
             axis = 0
         elif 'FALSE' in ynotx:
             axis = 1
-        loop_out = prd.locate_beam(values, CT400_last, CT400_current, axis)
-        data_out = (str(round(loop_out, 6))).zfill(10)
-        current_hol = np.array(values)
 
+        # Runs the beam location algorithm. Somewhat involved, but returns a
+        # loop_out value to tell LabVIEW whether or not to proceed
+        loop_out = prd.locate_beam(values, CT400_last, CT400_current, axis)
+
+        # Again, pads data_out into a length 10 string
+        data_out = (str(round(loop_out, 6))).zfill(10)
+
+        # This encodes the parameters used in the last hologram to be
+        # generated to be sent back to labVIEW with the same padding as above
+        current_hol = np.array(values)
         for i1 in np.ndenumerate(current_hol[0:]):
             elem = (str(round(i1[1], 6))).zfill(10)
             data_out = data_out + ',' + elem
